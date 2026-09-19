@@ -3,10 +3,8 @@ name: de-slop
 description: |
   Detect and eliminate AI slop / formulaic template writing from Chinese or English text.
   检测并消除中文或英文文本中的 AI 味与模板腔。
-  Triggers (en): AI slop, sounds like ChatGPT, too templated, make this more human, kill the AI voice, edit this draft, deslop, audit this for AI patterns.
-  触发词 (zh): AI 味、去 AI 味、太模板化、像机器写的、去油、说人话、公文腔修改、润色、检测/扫描有没有 AI 痕迹。
-  Auto-detects the language of the pasted text and loads the matching pattern library (references/patterns-zh.md or references/patterns-en.md). Use this whenever the user pastes a draft and asks for it to sound more human, or asks you to audit/flag AI-sounding writing — even if they don't use the exact word "slop".
-  支持三种模式：快速改写（默认）、纯检测、深度诊断。
+  Explicit invocation only — call by name (e.g. /de-slop). Auto-detects text language and loads the matching pattern library. 支持三种模式：快速改写（默认）、纯检测、深度诊断。
+disable-model-invocation: true
 ---
 
 # De-slop：去 AI 味 / 模板腔消除
