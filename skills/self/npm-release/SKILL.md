@@ -76,9 +76,9 @@ npm 发布链路里有几步一旦执行就不可逆(`git push --tags`、`npm pu
 `--generate-notes` 只是"有没有发布说明"的兜底,不是"发布说明写得够不够好"——它不理解变更的语义,只会拼 PR 标题或 commit 列表。这一步需要 agent 自己读一遍改动、按用户能看懂的方式分类总结:
 1. `git log <上一个 tag>..HEAD --oneline` 拿到本次改动的提交列表;仓库用 PR 合并的话再 `gh pr list --state merged --search "merged:>=<上次发布日期>"` 补充 PR 描述作为素材。
 2. 按 [references/release-notes-guide.md](references/release-notes-guide.md) 的模板分类整理(Features / Fixes / Docs-Chore / Breaking Changes),每条都写清"对用户来说变了什么",不要直接堆 commit 标题。
-3. 写成本地文件(如 `/tmp/release-notes-vX.Y.Z.md`),`gh release view vX.Y.Z` 看看步骤 6 的 workflow 有没有已经建了 release:
-   - 没有 → `gh release create vX.Y.Z --title vX.Y.Z --notes-file /tmp/release-notes-vX.Y.Z.md`
-   - 已有(如 workflow 里带了兜底的 `--generate-notes` 步骤)→ `gh release edit vX.Y.Z --notes-file /tmp/release-notes-vX.Y.Z.md`
+3. 写成本地文件(如 `$env:TEMP\release-notes-vX.Y.Z.md`),`gh release view vX.Y.Z` 看看步骤 6 的 workflow 有没有已经建了 release:
+   - 没有 → `gh release create vX.Y.Z --title vX.Y.Z --notes-file "$env:TEMP\release-notes-vX.Y.Z.md"`
+   - 已有(如 workflow 里带了兜底的 `--generate-notes` 步骤)→ `gh release edit vX.Y.Z --notes-file "$env:TEMP\release-notes-vX.Y.Z.md"`
 4. `gh release view vX.Y.Z` 确认发布说明已经是整理过的版本,不是原始的 compare 链接。
 
 ### 8. 沉淀

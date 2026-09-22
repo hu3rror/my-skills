@@ -7,6 +7,8 @@ description: Generate an interactive bash wizard that walks a human through step
 
 A **wizard** is a bash script that walks a human, step by step, through a manual procedure that's tedious to do by hand and tedious to re-explain to an AI every time. It opens each URL, says exactly what to click and copy, captures the values, writes them where they belong (`.env`, GitHub secrets), confirms at every stage, and shows how many stages are left. It might configure third-party services, run a one-off migration, or move the project from one state to another.
 
+**On Windows, run the wizard with Git Bash or WSL** — it's a bash script and PowerShell can't execute it directly. From a Git Bash prompt, run it as `bash <script>`; from PowerShell, convert the path with `wslpath` first and run it under WSL (see step 4's Windows branch for the exact form).
+
 The delightful UX is already solved by [template.sh](template.sh): stage-by-stage progress, confirmation gates, cross-platform URL opening (including WSL), hidden secret entry, idempotent `.env` upserts, `gh secret`/`gh variable` writes, and a closing summary. **Your job is only to scope the procedure and author its stages.** The library above the `STAGES` marker is identical in every wizard; that consistency is the point: never hand-edit it.
 
 A wizard is ephemeral by default: built for one run, saved to a scratch or `scripts/` path, deleted when the job's done. Commit it only when the user wants a repeatable setup path that should live in the repo.
@@ -40,5 +42,6 @@ Hold the bar the template sets: open the URL before asking for its value, use `a
 
 - `bash -n <script>`; run `shellcheck` if available.
 - `chmod +x <script>`.
+- **On Windows (PowerShell), don't run the two checks blind:** `wsl.exe`/`bash.exe` mangle Windows backslash paths (backslashes get stripped in transit), and `chmod` isn't a PowerShell command. Convert the path first, then check under WSL / Git Bash: `wsl bash -n "$(wsl wslpath -a 'C:/path/to/<script>')"` (or `bash -n <script>` from a Git Bash prompt). `chmod +x` is a no-op on NTFS, so skip it and tell the user to run the wizard with `bash <script>` from a Git Bash prompt, or with `wsl bash <linux-path>` (path converted via `wslpath`) from PowerShell.
 - Don't run it end-to-end yourself: it opens browsers and blocks on human input. Trace it statically instead: every value from step 1 is captured and lands where step 1 said, and every `set_secret` name exactly matches a `secrets.*` reference in CI.
 - Tell the user how to run it. If it's a repeatable setup path, commit it and link it from the README so the next person runs the script instead of asking an AI.
