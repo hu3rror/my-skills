@@ -33,6 +33,18 @@ npx skills add hu3rror/my-skills --all -g
 
 分发链保持不变：canonical 目录 + pi junctions 都由 CLI 生成。
 
+## 同步上游
+
+```bash
+# 预演：只报告会同步什么、哪些补丁文件被跳过，不写任何文件
+node scripts/vendor-sync.mjs --dry-run
+
+# 实际同步：浅克隆各上游，写入 skills/<source>/，跳过 PATCHES.md 列出的补丁文件
+node scripts/vendor-sync.mjs
+```
+
+补丁文件（`PATCHES.md` A 类）永不被覆盖，会报告为需要手动合并；上游删除的文件只报告、不删除，由维护者手动 `git rm`。GitHub Actions 提供同名 `vendor-sync` 手动工作流（`workflow_dispatch`，无定时），在日志中输出脚本摘要。
+
 ## 约定
 
 - 每个技能一个目录，内含 `SKILL.md`（目录 + SKILL.md，兼容所有支持该规范的 harness）

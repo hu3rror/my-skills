@@ -1,0 +1,33 @@
+# Vendor-sync: shallow-clone upstream skill repos and sync them into the
+# per-source directories, skipping PATCHES.md-listed files. Manual trigger only
+# (no cron). The script's summary is printed to the step logs.
+name: vendor-sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Report what would change without writing any files"
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run vendor sync
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            node scripts/vendor-sync.mjs --dry-run
+          else
+            node scripts/vendor-sync.mjs
+          fi
