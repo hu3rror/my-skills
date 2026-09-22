@@ -23,10 +23,8 @@ jobs:
           node-version: 22
 
       - name: Run vendor sync
-        env:
-          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          if [ "$DRY_RUN" = "true" ]; then
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
             node scripts/vendor-sync.mjs --dry-run
           else
             node scripts/vendor-sync.mjs

@@ -66,6 +66,17 @@ function main() {
     process.exit(1);
   }
 
+  // Guard the skip set itself: an A-class row that fails to parse into a real
+  // file path (e.g. the table gains a column) would silently shrink the set
+  // this mechanism exists to protect. Refuse rather than risk an overwrite.
+  const missing = [...patchedSet].filter((file) => !existsSync(toAbs(file)));
+  if (missing.length > 0) {
+    console.error(
+      `PATCHES.md: ${missing.length} A-class file(s) listed but not present in the repo: ${missing.join(", ")}. Refusing to sync.`,
+    );
+    process.exit(1);
+  }
+
   console.log(`Patched files listed in PATCHES.md: ${patchedSet.size}`);
   if (DRY_RUN) {
     console.log("Dry run: reporting only, no files will be written or deleted.");

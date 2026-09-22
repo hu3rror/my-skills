@@ -34,7 +34,7 @@ for manual merge. Windows-side, move the two pi-specific skills
 and weave a PowerShell-execution-environment constraint into the existing
 `~/.pi/agent/AGENTS.md` structure (not as a standalone rule).
 
-Distribution chain stays unchanged: `npx skills add hu3rror/my-skills --all -g`
+Distribution chain stays unchanged: `npx skills add hu3rror/my-skills -a pi universal -s '*' -g`
 writes the canonical copy to `~/.agents/skills` and re-creates the pi junctions.
 
 ## User Stories
@@ -87,8 +87,8 @@ writes the canonical copy to `~/.agents/skills` and re-creates the pi junctions.
 14. As the maintainer, I want `security-audit`'s upstream provenance traced; if
     no source is found it lands under `skills/other/`, so that no skill is
     orphaned or mis-attributed.
-15. As the maintainer, I want `npx skills add hu3rror/my-skills --all -g`
-    re-run after the migration so that the canonical `~/.agents/skills` and the
+15. As the maintainer, I want `npx skills add hu3rror/my-skills -a pi universal
+    -s '*' -g` re-run after the migration so that the canonical `~/.agents/skills` and the
     `~/.pi/agent/skills` junctions reflect the new consolidated layout.
 16. As the maintainer, I want the conditional (B-class) issues — jq dependency
     in `npm-release`, `curl` alias semantics in `diagnosing-bugs`, `rg` in
@@ -153,7 +153,8 @@ writes the canonical copy to `~/.agents/skills` and re-creates the pi junctions.
   per-command checks on the exact patched commands under PowerShell. A passing
   scan is not the same as a command that runs.
 - **Modules tested**:
-  - Distribution: `npx skills add hu3rror/my-skills --all -g` succeeds; `npx
+  - Distribution: `npx skills add hu3rror/my-skills -a pi universal -s '*' -g`
+    succeeds; `npx
     skills list` shows all 27+ skills; `~/.pi/agent/skills/*` junctions point at
     `~/.agents/skills/*`; `npm-release`/`pi-extension-sync` no longer exist as
     real dirs under `~/.pi/agent/skills`.
@@ -198,8 +199,9 @@ writes the canonical copy to `~/.agents/skills` and re-creates the pi junctions.
   re-downloads from the configured source; keep the source pointed at
   `hu3rror/my-skills` so updates flow through the patched copies.
 - **Revision (ticket #7 close-out, 2026-09-22)**: the operative distribution
-  command is `npx skills add hu3rror/my-skills -a pi universal -s '*' -g`, not
-  `--all -g` as written in US15 and the Testing Decisions above. Observed CLI
+  command is `npx skills add hu3rror/my-skills -a pi universal -s '*' -g`
+  (US15, Solution, and the Testing Decisions above use this form; the earlier
+  `--all -g` plan was superseded by observed CLI behavior). Observed CLI
   behavior: `--all` installs to every agent detected on the machine (junction
   sets were created under `~/.claude`, `~/.codebuddy`, `~/.roo`, `~/.trae`,
   `~/.zcode`, `~/.ona`, `~/.hermes`, `~/.autohand`, `~/.grok`), while a single
