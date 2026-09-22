@@ -25,7 +25,7 @@ scan passes) is currently a one-off cost with nothing persisted.
 
 Consolidate every shared skill into the self-owned aggregation repository
 `hu3rror/my-skills` (local checkout `~/Repos/my-skills`), organized by upstream
-source into folders, seeded from the current `~/.agents/skills` snapshot (which
+source into folders, imported from the current `~/.agents/skills` snapshot (which
 already contains 4 deliberate local patches), fix the PowerShell conflicts in
 the consolidated copies, record every patch in a `PATCHES.md` manifest, and add
 a lightweight upstream-sync mechanism that skips patched files and flags them
@@ -62,7 +62,7 @@ writes the canonical copy to `~/.agents/skills` and re-creates the pi junctions.
    `hu3rror/my-skills` organized by source (`mattpocock/`, `kill-ai-slop/`,
    `self/`, `other/`), so that all skills live in one version-controlled
    repository.
-8. As the maintainer, I want the repository seeded from the current
+8. As the maintainer, I want the repository imported from the current
    `~/.agents/skills` snapshot, so that the 4 existing local patches
    (research/wayfinder push notes, GitHub `"@me"` quoting, kill-ai-slop
    `disable-model-invocation`) are preserved as the baseline.
@@ -110,7 +110,7 @@ writes the canonical copy to `~/.agents/skills` and re-creates the pi junctions.
   `skills/kill-ai-slop/<name>/`, `skills/self/<name>/`, `skills/other/<name>/`.
   Full-repo `git subtree` of upstream is rejected: it would produce a 4-level
   path that the discovery rule cannot see.
-- **Baseline**: seed from the current `~/.agents/skills` snapshot (not from
+- **Baseline**: import from the current `~/.agents/skills` snapshot (not from
   upstream), because it already carries the 4 deliberate patches.
 - **Patch strategy**: patches live directly in the repository's skill files
   (fork semantics); `PATCHES.md` is the source of truth for what is patched.

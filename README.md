@@ -1,32 +1,52 @@
 # my-skills
 
-[English](README.en.md) | [中文](README.md)
+[English](README.md) | [中文](README_zh-CN.md)
 
-跨 harness 共享的 Agent Skills 聚合仓库：按**上游来源**分目录组织并纳入版本控制，是本机 `~/.agents/skills` 的种子源。直接编辑 `~/.agents/skills` 会在下次 `npx skills update` 时被上游覆盖；本仓库是可持续的维护形态（补丁以 fork 语义落在技能文件里）。
+An aggregation repository of Agent Skills shared across harnesses, organized by
+upstream source and version-controlled. It is the source of the machine-local
+`~/.agents/skills` store. Editing `~/.agents/skills` directly works until
+the next `npx skills update` re-downloads from upstream and silently discards
+local edits; this repository is the durable maintenance form (patches live in
+the skill files, fork-style).
 
-## 目录结构（按来源组织）
+## Layout (by source)
 
-| 目录 | 来源 | 说明 |
+| Directory | Source | Notes |
 |---|---|---|
-| `skills/mattpocock/{engineering,productivity,in-progress}/<name>/` | [mattpocock/skills](https://github.com/mattpocock/skills) | 23 个技能，保留上游 `engineering` / `productivity` / `in-progress` 分类 |
-| `skills/kill-ai-slop/<name>/` | [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop) | kill-ai-slop（上游路径为 `skill/`，聚合后归一为来源目录） |
-| `skills/cloudflare/<name>/` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | security-audit（来源已溯源，记录于本机 `~/.agents/.skill-lock.json`） |
-| `skills/self/<name>/` | 自建 | de-slop、web-debug（通用；de-slop 带 `disable-model-invocation: true`，仅显式调用）；npm-release、pi-extension-sync（pi 专属，带 `disable-model-invocation: true`，避免其他 harness 自动触发） |
+| `skills/mattpocock/{engineering,productivity,in-progress}/<name>/` | [mattpocock/skills](https://github.com/mattpocock/skills) | 23 skills, keeping the upstream `engineering` / `productivity` / `in-progress` categories |
+| `skills/kill-ai-slop/<name>/` | [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop) | kill-ai-slop (upstream path is `skill/`; normalized to the source dir here) |
+| `skills/cloudflare/<name>/` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | security-audit (provenance traced; recorded in the local `~/.agents/.skill-lock.json`) |
+| `skills/self/<name>/` | self-authored | de-slop, web-debug (general-purpose; de-slop carries `disable-model-invocation: true`, explicit invocation only); npm-release, pi-extension-sync (pi-specific, `disable-model-invocation: true`, so other harnesses never auto-trigger) |
 
-**发现深度约束**：`vercel-labs/skills` CLI 的发现规则只约束**技能目录**（含 `SKILL.md` 的目录）的深度——`skills/` 容器下最多三层（`skills/<cat>/<cat>/<name>/`）。本仓库技能目录最深为 `skills/mattpocock/<category>/<name>/`，在规则之内；技能目录内部的辅助文件（`agents/`、`references/`、`scripts/`）不受此限，可再往下嵌套。
+**Discovery depth rule**: the `vercel-labs/skills` CLI discovery constrains only
+the depth of skill directories (dirs containing `SKILL.md`): at most three
+levels under the `skills/` container (`skills/<cat>/<cat>/<name>/`). The
+deepest skill dir here is `skills/mattpocock/<category>/<name>/`, within the
+rule. Helper files inside a skill (`agents/`, `references/`, `scripts/`) are
+not depth-limited.
 
-## 基线播种
+## Baseline import
 
-仓库以本机 `~/.agents/skills` 当前快照**逐字节播种**（105 个文件），因而天然携带快照里已有的 4 处基线补丁。相对上游的全部差异（4 基线补丁 + 4 新增补丁 + 4 条 B 类环境备忘）记录在根目录 [`PATCHES.md`](PATCHES.md)（`self/` 为自建技能，无上游）；上游来源技能已逐文件校验。基线 4 处为：
+The repo was imported byte-for-byte (105 files) from the current
+`~/.agents/skills` snapshot, so it carries the 4 baseline patches the snapshot
+already had. Every deviation from upstream (4 baseline patches + 4 new patches
++ 4 B-class environment notes) is recorded in [`PATCHES.md`](PATCHES.md) at the
+repo root (`self/` skills are self-authored and have no upstream); upstream
+sourced files were verified file-by-file. The baseline patches:
 
-- `research/SKILL.md`：pi 后台 research agent 完成即推送的机制说明（+2 行）
-- `wayfinder/SKILL.md`：research 子代理完成推送的处理方式（+1 行）
-- `setup-matt-pocock-skills/issue-tracker-github.md`：`--add-assignee "@me"` 加引号 + Windows PowerShell splatting 警告
-- `kill-ai-slop/SKILL.md`：`disable-model-invocation: true`
+- `research/SKILL.md`: pi's background research agent pushes its completion
+  findings instead of being polled (+2 lines)
+- `wayfinder/SKILL.md`: how to handle research subagent completion pushes
+  (+1 line)
+- `setup-matt-pocock-skills/issue-tracker-github.md`: `--add-assignee "@me"`
+  quoting + Windows PowerShell splatting warning
+- `kill-ai-slop/SKILL.md`: `disable-model-invocation: true`
 
-两个 pi 专属技能（`npm-release`、`pi-extension-sync`）从 Windows pi 配置迁移进 `skills/self/`，`~/.pi` 不再托管技能副本（junction-only；迁移见 ticket #5）。
+The two pi-specific skills (`npm-release`, `pi-extension-sync`) were moved out
+of the Windows pi config into `skills/self/`; `~/.pi` no longer hosts skill
+copies (junctions only; migration in ticket #5).
 
-## 安装 / 分发
+## Install / distribute
 
 ```bash
 # Install globally (~/.agents/skills), create links for pi only.
@@ -36,28 +56,43 @@
 npx skills add hu3rror/my-skills -a pi universal -s '*' -g -y
 ```
 
-分发链保持不变：canonical 目录 + pi junctions 都由 CLI 生成。`-a pi universal` 只对 pi 建链接——追加 `universal` 是为了让 CLI 保持 junction 模式（单一 `-a` 目标会静默退化为 copy 模式，把 pi 目录写成本地副本而不是 junction）；`--all` 会对本机所有已检测 agent 建链接，本仓库只需要 pi，不要用。
+The distribution chain is unchanged: the canonical store and the pi junctions
+are generated by the CLI. `-a pi universal` creates links for pi only; the
+extra `universal` argument keeps the CLI in junction mode, because a single
+`-a` target silently degrades to copy mode (real directories instead of
+junctions), and `--all` would link every agent detected on the machine, which
+this repo does not want.
 
-## 同步上游
+## Sync upstream
 
 ```bash
-# 预演：只报告会同步什么、哪些补丁文件被跳过，不写任何文件
+# Dry run: report what would change and which patched files are skipped, write nothing
 node scripts/vendor-sync.mjs --dry-run
 
-# 实际同步：浅克隆各上游，写入 skills/<source>/，跳过 PATCHES.md 列出的补丁文件
+# Real sync: shallow-clone each upstream into skills/<source>/, skipping PATCHES.md-listed files
 node scripts/vendor-sync.mjs
 ```
 
-补丁文件（`PATCHES.md` A 类）永不被覆盖，会报告为需要手动合并；上游删除的文件只报告、不删除，由维护者手动 `git rm`。GitHub Actions 提供同名 `vendor-sync` 手动工作流（`workflow_dispatch`，无定时），在日志中输出脚本摘要。
+Patched files (`PATCHES.md` A-class) are never overwritten; they are reported
+as needing a manual merge. Files upstream removed are reported but not deleted;
+the maintainer runs `git rm` by hand. A manually-triggered GitHub Actions
+workflow (`vendor-sync`, `workflow_dispatch`, no cron) runs the script and
+prints its summary to the logs.
 
-## 约定
+## Conventions
 
-- 每个技能一个目录，内含 `SKILL.md`（目录 + SKILL.md，兼容所有支持该规范的 harness）
-- 脚本使用相对 skill 目录的路径，不写死 `~/.pi` 等具体 harness 路径
-- pi 专属技能放 `skills/self/`，必须保留 `disable-model-invocation: true`
-- 技能目录（含 `SKILL.md` 的目录）深度不得超过 `skills/<cat>/<cat>/<name>/`（CLI 发现规则上限）；目录内的辅助文件不受此限
+- One directory per skill, containing `SKILL.md` (directory + SKILL.md works
+  with every harness that supports the spec)
+- Scripts use paths relative to the skill directory, never hardcode harness
+  paths like `~/.pi`
+- pi-specific skills live in `skills/self/` and must keep
+  `disable-model-invocation: true`
+- Skill directories (containing `SKILL.md`) go at most
+  `skills/<cat>/<cat>/<name>/` deep (CLI discovery limit); helper files inside
+  are not limited
 
-## 相关文档
+## Related docs
 
-- 维护规范与迁移计划：`docs/specs/powershell-portability-and-maintenance.md`
-- 仓库协作约定：`AGENTS.md`、`docs/agents/`
+- Maintenance spec and migration plan:
+  `docs/specs/powershell-portability-and-maintenance.md`
+- Repo collaboration conventions: `AGENTS.md`, `docs/agents/`

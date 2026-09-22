@@ -42,12 +42,12 @@ _Avoid_: pi skill (drops the other-harness visibility consequence)
 `PATCHES.md`, the record of every deviation from upstream (file, patch summary, upstream counterpart, verification method). The sync script skips listed files and reports them as manual-merge required.
 _Avoid_: patch list, changelog
 
-**Snapshot seed**:
-The one-time act of seeding the repo byte-identical from the canonical-store snapshot, which carried the four baseline patches into the repo as its baseline.
-_Avoid_: seed source (implies ongoing authority)
+**Snapshot import**:
+The one-time act of importing the repo byte-identical from the canonical-store snapshot, which carried the four baseline patches into the repo as its baseline.
+_Avoid_: seeding, seed source (the gardening metaphor; import is the operation)
 
 **Baseline patch**:
-A patch carried into the repo by the snapshot seed (four: research/wayfinder push notes, quoted `@me`, kill-ai-slop `disable-model-invocation`).
+A patch carried into the repo by the snapshot import (four: research/wayfinder push notes, quoted `@me`, kill-ai-slop `disable-model-invocation`).
 
 **A-class patch**:
 A must-fix platform patch applied to a consolidated copy (four: wizard, diagnosing-bugs, npm-release temp path, GitLab tracker quoting).
