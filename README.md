@@ -1,5 +1,7 @@
 # my-skills
 
+[English](README.en.md) | [中文](README.md)
+
 跨 harness 共享的 Agent Skills 聚合仓库：按**上游来源**分目录组织并纳入版本控制，是本机 `~/.agents/skills` 的种子源。直接编辑 `~/.agents/skills` 会在下次 `npx skills update` 时被上游覆盖；本仓库是可持续的维护形态（补丁以 fork 语义落在技能文件里）。
 
 ## 目录结构（按来源组织）
