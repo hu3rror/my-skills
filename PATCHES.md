@@ -11,6 +11,9 @@ below** and report it as "upstream updated a patched file — merge manually".
 |---|---|---|
 | mattpocock/skills | https://github.com/mattpocock/skills | `c55ee46073ed923f86ce59a5eb3b6d895095d1b7` |
 | yetone/kill-ai-slop | https://github.com/yetone/kill-ai-slop | `f6e2ae32b30443ec7bd0da4da971ee18d8f8ffcb` |
+| cloudflare/security-audit-skill | https://github.com/cloudflare/security-audit-skill | `c1c8a8c1471069fb0e188eeaff69b8e8db6564a8` |
+
+cloudflare has no A-class patches; the pin records the provenance trace (spec US14 — source found, so it lands under `skills/cloudflare/` rather than `skills/other/`) and is the diff baseline if a patch is ever added.
 
 `skills/self/` skills are self-authored (no upstream); their counterpart is the
 pre-consolidation home: for `npm-release` the last pre-deletion version is in
