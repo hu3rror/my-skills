@@ -15,4 +15,7 @@ repo would not ship the artifacts agents actually run); rely on the CLI's
 absent overlay mechanism (not possible).
 
 **Consequences**: diffing against upstream must show exactly the documented
-patch lines; every patch entry must map to a real file in the repo.
+patch lines; every patch entry must map to a real file in the repo. Extending
+the same no-silent-clobber rule, vendor sync reports files removed upstream but
+never deletes them — removal stays a manual `git rm` so a locally-authored file
+that isn't yet attributed can't be silently lost.

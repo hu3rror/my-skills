@@ -8,6 +8,10 @@ The version-controlled single home of every shared agent skill, organized by ups
 The version-controlled home of all shared skills, organized by upstream source; the only content source for the distribution chain.
 _Avoid_: skills store (confused with the canonical skills store), my-skills (this repo's proper name, not the concept)
 
+**Consolidated copy**:
+A skill's file as it lives in the aggregation repo — the middle copy between the upstream original and the canonical-store copy, and the one that carries patches.
+_Avoid_: copy (too generic), patched copy (used but undefined)
+
 **Canonical skills store**:
 The machine-local runtime directory (`~/.agents/skills`) that `npx skills` installs into from the aggregation repo. A derived distribution target — never edited directly, because the next update silently clobbers local edits.
 _Avoid_: canonical source, canonical copies (reserve "canonical" for this store)
@@ -16,12 +20,16 @@ _Avoid_: canonical source, canonical copies (reserve "canonical" for this store)
 The pipeline `npx skills add <aggregation repo> --all -g` → canonical skills store + pi junctions. Works only while the aggregation repo stays the single configured source.
 _Avoid_: install (a single hop, not the chain)
 
+**Vendor sync**:
+The upstream leg of the skill flow, opposite the distribution chain: the script (`scripts/vendor-sync.mjs`) that pulls upstream skills into the aggregation repo's consolidated copies.
+_Avoid_: sync script (too generic)
+
 **Junction**:
 The link type in `~/.pi/agent/skills` that exposes canonical-store skills to pi without copying. The pi config hosts no skill copies — junctions only.
 _Avoid_: symlink (a different Windows mechanism)
 
 **Upstream**:
-An external skill source vendored into the repo (mattpocock/skills, yetone/kill-ai-slop, cloudflare). Never consumed directly by the distribution chain.
+An external skill source vendored into the repo (mattpocock/skills, yetone/kill-ai-slop, cloudflare). Never consumed directly by the distribution chain. Provenance — the traced attribution of a skill to its upstream (`~/.agents/.skill-lock.json`) — decides the source directory; unattributed skills wait under `skills/other/`.
 _Avoid_: source (too generic)
 
 **pi-specific skill**:
