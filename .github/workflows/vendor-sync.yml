@@ -14,11 +14,14 @@ on:
 
 jobs:
   sync:
-    runs-on: ubuntu-latest
+    # Pinned instead of ubuntu-latest: the label migrates to Ubuntu 26.04 from
+    # 2026-10-19 (actions/runner-images#14748); this script only needs git + node,
+    # so pinning avoids the migration warning and implicit OS churn.
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
 
