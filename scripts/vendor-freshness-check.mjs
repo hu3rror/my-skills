@@ -12,10 +12,12 @@
 //   - copies current, an open issue exists          -> close it as completed
 // Assignment is what actually delivers the notification: repo owners are not
 // auto-watchers of their own repos, so an unassigned issue may never ping them.
-// The workflow runs with GITHUB_TOKEN (issues:write) and preinstalled gh.
+// The workflow runs with GH_TOKEN (github.token, issues:write) and the
+// gh CLI preinstalled on runners.
 //
 // usage: node scripts/vendor-freshness-check.mjs <sync log> [--dry-run]
-// env: GITHUB_REPOSITORY, GITHUB_RUN_ID (both set on Actions runners).
+// env: GH_TOKEN (or any gh auth), GITHUB_REPOSITORY, GITHUB_RUN_ID (the
+// last two come preset on Actions runners).
 // --dry-run prints what it would do; read-only API queries still run so the
 // parsing/state logic is exercised for real, but nothing is written.
 

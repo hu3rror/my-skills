@@ -35,9 +35,13 @@ jobs:
           # of opening an issue on incomplete data.
           node scripts/vendor-sync.mjs --dry-run | tee /tmp/vendor-sync.log
 
-      # gh runs as GITHUB_TOKEN; env GITHUB_REPOSITORY/GITHUB_RUN_ID come from
-      # the runner defaults. Race note: a cron run overlapping a manual
-      # dispatch could double-open the issue (the open-issue check is not
-      # atomic); accepted — the overlap window is a minute per day.
+      # gh needs the token passed explicitly as GH_TOKEN (newer gh CLI in the
+      # runner image no longer falls back to the GITHUB_TOKEN env var); env
+      # GITHUB_REPOSITORY/GITHUB_RUN_ID come from the runner defaults. Race
+      # note: a cron run overlapping a manual dispatch could double-open the
+      # issue (the open-issue check is not atomic); accepted — the overlap
+      # window is a minute per day.
       - name: Open or close pending-update issue
         run: node scripts/vendor-freshness-check.mjs /tmp/vendor-sync.log
+        env:
+          GH_TOKEN: ${{ github.token }}
