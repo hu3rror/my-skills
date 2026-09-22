@@ -22,7 +22,7 @@
 - `setup-matt-pocock-skills/issue-tracker-github.md`：`--add-assignee "@me"` 加引号 + Windows PowerShell splatting 警告
 - `kill-ai-slop/SKILL.md`：`disable-model-invocation: true`
 
-两个 pi 专属技能（`npm-release`、`pi-extension-sync`）从 Windows pi 配置复制进 `skills/self/`，原处副本保留（后续迁移/移除在独立 ticket 中处理）。
+两个 pi 专属技能（`npm-release`、`pi-extension-sync`）从 Windows pi 配置迁移进 `skills/self/`，`~/.pi` 不再托管技能副本（junction-only；迁移见 ticket #5）。
 
 ## 安装 / 分发
 

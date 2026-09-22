@@ -1,0 +1,48 @@
+# Shared Skills
+
+The version-controlled single home of every shared agent skill, organized by upstream source. Owns the distribution chain into the machine-local canonical skills store and the patch record for every deviation from upstream.
+
+## Distribution & Ownership
+
+**Aggregation repo**:
+The version-controlled home of all shared skills, organized by upstream source; the only content source for the distribution chain.
+_Avoid_: skills store (confused with the canonical skills store), my-skills (this repo's proper name, not the concept)
+
+**Canonical skills store**:
+The machine-local runtime directory (`~/.agents/skills`) that `npx skills` installs into from the aggregation repo. A derived distribution target — never edited directly, because the next update silently clobbers local edits.
+_Avoid_: canonical source, canonical copies (reserve "canonical" for this store)
+
+**Distribution chain**:
+The pipeline `npx skills add <aggregation repo> --all -g` → canonical skills store + pi junctions. Works only while the aggregation repo stays the single configured source.
+_Avoid_: install (a single hop, not the chain)
+
+**Junction**:
+The link type in `~/.pi/agent/skills` that exposes canonical-store skills to pi without copying. The pi config hosts no skill copies — junctions only.
+_Avoid_: symlink (a different Windows mechanism)
+
+**Upstream**:
+An external skill source vendored into the repo (mattpocock/skills, yetone/kill-ai-slop, cloudflare). Never consumed directly by the distribution chain.
+_Avoid_: source (too generic)
+
+**pi-specific skill**:
+A skill owned by this user's pi workflows (`npm-release`, `pi-extension-sync`); lives under `skills/self/` and must keep `disable-model-invocation: true` so other harnesses sharing the canonical store never auto-trigger it.
+_Avoid_: pi skill (drops the other-harness visibility consequence)
+
+## Patches
+
+**Patch manifest**:
+`PATCHES.md`, the record of every deviation from upstream (file, patch summary, upstream counterpart, verification method). The sync script skips listed files and reports them as manual-merge required.
+_Avoid_: patch list, changelog
+
+**Snapshot seed**:
+The one-time act of seeding the repo byte-identical from the canonical-store snapshot, which carried the four baseline patches into the repo as its baseline.
+_Avoid_: seed source (implies ongoing authority)
+
+**Baseline patch**:
+A patch carried into the repo by the snapshot seed (four: research/wayfinder push notes, quoted `@me`, kill-ai-slop `disable-model-invocation`).
+
+**A-class patch**:
+A must-fix platform patch applied to a consolidated copy (four: wizard, diagnosing-bugs, npm-release temp path, GitLab tracker quoting).
+
+**B-class advisory note**:
+A conditional environment issue recorded in the patch manifest, not patched into the skill body (four: jq, curl alias, rg, web-debug bash phrasing).
