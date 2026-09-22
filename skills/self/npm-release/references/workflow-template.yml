@@ -1,0 +1,64 @@
+# npm 发布工作流模板(Trusted Publisher / OIDC,零 token)
+# 用法:复制到 .github/workflows/publish.yml,按 SKILL.md 的"定制点"逐项调整。
+# 前置:npmjs.com 已为包配置 Trusted Publisher,绑定本仓库 + 本 workflow 文件名。
+#
+# 模式 A(暂存流,维护者 2FA 放行):保留 npm stage publish
+# 模式 B(直接发布):把 stage 步骤换成 npm publish
+name: publish
+
+on:
+  push:
+    tags:
+      - "v*" # 定制点:仓库 tag 约定(如 "v*" / "release-*")
+
+permissions:
+  contents: read
+  id-token: write # Trusted Publishing(OIDC)必需;同时自动生成 provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest # 定制点:测试依赖 Windows 特性时改 windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24 # 定制点:npm stage 需 npm 11+(Node 24 自带)
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci # 定制点:无 package-lock.json 时用 npm install
+
+      - name: Run tests
+        # 定制点:无测试可删本步骤;构建脚本需工具路径时在此 step 加 env(如 PI_ESBUILD_DIR)
+        run: npm test
+
+      - name: Verify tag matches package.json version
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$version" ]; then
+            echo "::error::tag v${tag} does not match package.json version ${version}"
+            exit 1
+          fi
+
+      # 模式 A:暂存(不直接发布;stage-id 在日志中,维护者本地 approve)
+      - name: Stage package on npm registry
+        run: npm stage publish --provenance
+
+      # 模式 B:直接发布(全自动,信任 OIDC 仓库所有权)
+      # - name: Publish to npm registry
+      #   run: npm publish --provenance
+
+      # 可选(仅模式 B):建一个占位 Release,避免 tag push 后完全没有 Release 页面。
+      # 只生成 "Full Changelog: vX...vY" 一行比较链接,信息量很低——真正分类
+      # 整理过的发布说明由 agent 在 SKILL.md 步骤 7 用 `gh release edit` 覆盖,
+      # 见 references/release-notes-guide.md。
+      # 模式 A 下这一步此时对应的版本还只是"暂存",尚未经维护者 approve 真正
+      # 发布,不要在这里建 Release——整段删除,改成步骤 7 里 approve 之后由
+      # agent 手动 `gh release create`。
+      - name: Create GitHub Release (placeholder notes)
+        run: gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
