@@ -79,6 +79,12 @@ the maintainer runs `git rm` by hand. A manually-triggered GitHub Actions
 workflow (`vendor-sync`, `workflow_dispatch`, no cron) runs the script and
 prints its summary to the logs.
 
+A daily vendor freshness check (`.github/workflows/vendor-freshness-check.yml`,
+cron UTC 01:00 + manual dispatch) runs the dry-run and turns its result into a
+single `pending-update` issue assigned to the maintainer — opened when a source
+has changes not yet vendored, closed again once the copies are current. It
+never modifies files; the real sync stays manual.
+
 ## Conventions
 
 - One directory per skill, containing `SKILL.md` (directory + SKILL.md works

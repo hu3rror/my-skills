@@ -32,6 +32,9 @@ const SOURCES = [
     name: "mattpocock",
     url: "https://github.com/mattpocock/skills.git",
     targetRoot: "skills/mattpocock",
+    // Release-tracked upstream: the freshness check fetches its latest
+    // release as context (see the per-source releaseRepo in the summary).
+    releaseRepo: "mattpocock/skills",
     skillRoots: mattpocockSkillRoots,
   },
   {
@@ -85,6 +88,7 @@ function main() {
   const total = { added: 0, updated: 0, removed: 0, unchanged: 0 };
   const patched = [];
   const errors = [];
+  const sources = [];
   let failed = false;
 
   for (const source of SOURCES) {
@@ -98,6 +102,32 @@ function main() {
     total.removed += r.removed.length;
     total.unchanged += r.unchanged;
     for (const item of r.patched) patched.push({ source: source.name, ...item });
+
+    // Machine-readable per-source state for the freshness check workflow:
+    // pending = a dry run would change files, or a patched file now needs a
+    // manual merge. patched-but-unchanged files are not pending. The patched
+    // tri-state comes from the same classifier as the human summary above.
+    const patchedByStatus = { differs: [], removed: [], unchanged: 0 };
+    for (const item of r.patched) {
+      const status = patchedStatus(item);
+      if (status === "unchanged") patchedByStatus.unchanged++;
+      else patchedByStatus[status].push(item.path);
+    }
+    sources.push({
+      name: source.name,
+      pending:
+        r.added.length + r.updated.length + r.removed.length +
+        patchedByStatus.differs.length + patchedByStatus.removed.length >
+        0,
+      added: r.added,
+      updated: r.updated,
+      removed: r.removed,
+      patchedDiffers: patchedByStatus.differs,
+      patchedRemoved: patchedByStatus.removed,
+      patchedUnchanged: patchedByStatus.unchanged,
+      releaseRepo: source.releaseRepo,
+    });
+
     for (const e of r.errors) {
       errors.push(e);
       console.error(`  error: ${e}`);
@@ -112,16 +142,19 @@ function main() {
   console.log(`unchanged:  ${total.unchanged}`);
   console.log(`patched (skipped, never overwritten): ${patched.length}`);
   for (const p of patched) {
-    if (p.removedUpstream) {
-      console.log(
-        `  [patched] ${p.path} — upstream removed this file; kept local copy, merge manually`,
-      );
-    } else if (p.differs) {
-      console.log(
-        `  [patched] ${p.path} — upstream updated a patched file — merge manually`,
-      );
-    } else {
-      console.log(`  [patched] ${p.path} — unchanged`);
+    switch (patchedStatus(p)) {
+      case "removed":
+        console.log(
+          `  [patched] ${p.path} — upstream removed this file; kept local copy, merge manually`,
+        );
+        break;
+      case "differs":
+        console.log(
+          `  [patched] ${p.path} — upstream updated a patched file — merge manually`,
+        );
+        break;
+      default:
+        console.log(`  [patched] ${p.path} — unchanged`);
     }
   }
   const unseenPatched = patchedSet.size - patched.length;
@@ -133,6 +166,24 @@ function main() {
   if (errors.length > 0) {
     console.error(`\n${errors.length} source(s) failed.`);
   }
+  // Machine-readable summary line for the freshness check workflow. Unique
+  // single-line prefix, printed in both dry-run and real mode; humans keep
+  // reading the block above.
+  console.log(
+    `VENDOR_SYNC_SUMMARY=${JSON.stringify({
+      dryRun: DRY_RUN,
+      failed,
+      changed: sources.some((s) => s.pending),
+      counts: {
+        added: total.added,
+        updated: total.updated,
+        removed: total.removed,
+        unchanged: total.unchanged,
+      },
+      errors,
+      sources,
+    })}`,
+  );
   process.exit(failed ? 1 : 0);
 }
 
@@ -273,6 +324,14 @@ function parsePatchedFiles() {
     }
   }
   return files;
+}
+
+// One tri-state classification shared by the human summary and the machine
+// summary so the two can never disagree about a patched file.
+function patchedStatus(item) {
+  if (item.removedUpstream) return "removed";
+  if (item.differs) return "differs";
+  return "unchanged";
 }
 
 function filesDiffer(a, b) {

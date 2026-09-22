@@ -1,0 +1,43 @@
+# Vendor freshness check: runs the vendoring script's dry-run daily and turns
+# the result into a pending-update issue the repo owner gets notified about
+# (assigned + labeled). The real sync stays manual (`vendor-sync.yml`) so
+# PATCHES.md discipline — patched files are never overwritten — is preserved.
+# No keepalive: GitHub auto-disables scheduled workflows in public repos after
+# 60 days without repository activity (commits or manual workflow runs); a
+# manual vendor-sync run resets that clock.
+name: vendor-freshness-check
+
+on:
+  schedule:
+    - cron: "0 1 * * *" # daily, UTC 01:00 (~09:00 at UTC+8)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write # create/close/label the pending-update issue
+
+jobs:
+  check:
+    # Same pinning rationale as vendor-sync.yml: ubuntu-latest migrates OS
+    # labels; this job only needs git + node.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Dry-run vendor sync
+        run: |
+          set -o pipefail
+          # A failed source exits non-zero (pipefail) and fails the job instead
+          # of opening an issue on incomplete data.
+          node scripts/vendor-sync.mjs --dry-run | tee /tmp/vendor-sync.log
+
+      # gh runs as GITHUB_TOKEN; env GITHUB_REPOSITORY/GITHUB_RUN_ID come from
+      # the runner defaults. Race note: a cron run overlapping a manual
+      # dispatch could double-open the issue (the open-issue check is not
+      # atomic); accepted — the overlap window is a minute per day.
+      - name: Open or close pending-update issue
+        run: node scripts/vendor-freshness-check.mjs /tmp/vendor-sync.log

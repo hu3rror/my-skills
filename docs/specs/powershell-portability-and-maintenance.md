@@ -211,7 +211,15 @@ writes the canonical copy to `~/.agents/skills` and re-creates the pi junctions.
   is never created; universal installs canonical-only). The mistaken agent
   junctions were pruned with `npx skills remove -g -y --all -a <agent>...`,
   leaving empty `skills` dirs behind which were then removed.
-- **R1 confirmation points during implementation** (per `~/.pi/agent/AGENTS.md`):
+- **Revision (vendor freshness check, 2026-09-22)**: US11 and the Out-of-Scope
+  "Scheduled/automated upstream sync (manual-trigger workflow only, for now)"
+  are superseded for the detection half. `vendor-freshness-check.yml` (cron UTC
+  01:00 + workflow_dispatch) runs `vendor-sync.mjs --dry-run` daily and
+  opens/closes a `pending-update` issue assigned to the maintainer; the real
+  sync remains manual (`vendor-sync.yml`, no cron) so patched-file manual-merge
+  discipline is preserved. Rationale: upstream sources (mattpocock,
+  kill-ai-slop, cloudflare) commit between releases, so a notification-only
+  check is worth a scheduled run; it never writes files.
   push of `my-skills` (#1), `git rm` + directory removal + `.gitignore` +
   AGENTS.md edits on `~/.pi` (#8, #4), push of `~/.pi` (#1). The re-distribution
   step is local install only and needs no R1 confirmation.
@@ -227,4 +235,4 @@ writes the canonical copy to `~/.agents/skills` and re-creates the pi junctions.
 - 理由：vercel-labs/skills 无补丁层，直接改 ~/.agents/skills 会被 npx skills update 覆盖；聚合仓库 + 补丁清单是可持续的维护形态。
 - 影响：分发链不变（npx skills add → canonical + pi junction）；npm-release/pi-extension-sync 迁出 ~/.pi 进 skills/self/；AGENTS.md 第 2 节融入 PowerShell 执行环境约束。
 - 风险：同步脚本若未按 PATCHES.md 跳过补丁文件会覆盖本地适配（已设计 skip+提醒）；security-audit 来源未溯源（暂归 other/）。
-- 待定：上游同步 workflow 先手动触发，不设定时；B 类条件性问题只入备忘不改正文。
+- 待定：上游同步 workflow 先手动触发，不设定时（2026-09-22 修订：检测半块改为每日 cron 的 vendor freshness check，只 dry-run + pending-update issue，不写文件；真实 sync 仍手动）；B 类条件性问题只入备忘不改正文。

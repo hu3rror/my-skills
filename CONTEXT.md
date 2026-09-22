@@ -36,6 +36,20 @@ _Avoid_: source (too generic)
 A skill owned by this user's pi workflows (`npm-release`, `pi-extension-sync`); lives under `skills/self/` and must keep `disable-model-invocation: true` so other harnesses sharing the canonical store never auto-trigger it.
 _Avoid_: pi skill (drops the other-harness visibility consequence)
 
+## Update detection
+
+**Vendor freshness check**:
+The periodic inspection that determines whether an upstream source has content not yet present in its consolidated copy. Reports rather than modifies: findings land in a pending-update issue, never in changed files.
+_Avoid_: update check, update watcher
+
+**Pending update**:
+A state in which an upstream source's current content differs from its consolidated copy — new or changed files, files upstream removed (kept for review), or a patched file that upstream modified.
+_Avoid_: update, diff
+
+**Pending-update issue**:
+The GitHub issue that records a pending update for the maintainer to act on. Open while the update is pending; closed by the freshness check once the copies are current again.
+_Avoid_: notification issue, alert
+
 ## Patches
 
 **Patch manifest**:
