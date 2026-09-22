@@ -197,6 +197,18 @@ writes the canonical copy to `~/.agents/skills` and re-creates the pi junctions.
 - **Distribution caveat**: re-running `npx skills update` after migration
   re-downloads from the configured source; keep the source pointed at
   `hu3rror/my-skills` so updates flow through the patched copies.
+- **Revision (ticket #7 close-out, 2026-09-22)**: the operative distribution
+  command is `npx skills add hu3rror/my-skills -a pi universal -s '*' -g`, not
+  `--all -g` as written in US15 and the Testing Decisions above. Observed CLI
+  behavior: `--all` installs to every agent detected on the machine (junction
+  sets were created under `~/.claude`, `~/.codebuddy`, `~/.roo`, `~/.trae`,
+  `~/.zcode`, `~/.ona`, `~/.hermes`, `~/.autohand`, `~/.grok`), while a single
+  `-a <agent>` argument flips the CLI into copy mode, writing real skill
+  directories instead of junctions. Adding `universal` between them keeps
+  symlink/junction mode and adds no links of its own (`~/.config/agents/skills`
+  is never created; universal installs canonical-only). The mistaken agent
+  junctions were pruned with `npx skills remove -g -y --all -a <agent>...`,
+  leaving empty `skills` dirs behind which were then removed.
 - **R1 confirmation points during implementation** (per `~/.pi/agent/AGENTS.md`):
   push of `my-skills` (#1), `git rm` + directory removal + `.gitignore` +
   AGENTS.md edits on `~/.pi` (#8, #4), push of `~/.pi` (#1). The re-distribution

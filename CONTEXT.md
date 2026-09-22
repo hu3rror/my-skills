@@ -17,7 +17,7 @@ The machine-local runtime directory (`~/.agents/skills`) that `npx skills` insta
 _Avoid_: canonical source, canonical copies (reserve "canonical" for this store)
 
 **Distribution chain**:
-The pipeline `npx skills add <aggregation repo> --all -g` → canonical skills store + pi junctions. Works only while the aggregation repo stays the single configured source.
+The pipeline `npx skills add <aggregation repo> -a pi universal -s '*' -g` → canonical skills store + pi junctions. The explicit `-a pi universal` targets pi only: a single `-a` argument flips the CLI into copy mode (real directories instead of junctions) and `--all` would link every agent detected on the machine. Works only while the aggregation repo stays the single configured source.
 _Avoid_: install (a single hop, not the chain)
 
 **Vendor sync**:

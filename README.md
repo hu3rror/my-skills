@@ -27,11 +27,14 @@
 ## 安装 / 分发
 
 ```bash
-# 装到全局（~/.agents/skills），为已检测到的 agent 建链接
-npx skills add hu3rror/my-skills --all -g
+# Install globally (~/.agents/skills), create links for pi only.
+# Do NOT use --all: it links every agent detected on this machine.
+# -a pi universal keeps the CLI in symlink (junction) mode; a single
+# -a target silently falls back to copy mode (real dirs, not junctions).
+npx skills add hu3rror/my-skills -a pi universal -s '*' -g -y
 ```
 
-分发链保持不变：canonical 目录 + pi junctions 都由 CLI 生成。
+分发链保持不变：canonical 目录 + pi junctions 都由 CLI 生成。`-a pi universal` 只对 pi 建链接——追加 `universal` 是为了让 CLI 保持 junction 模式（单一 `-a` 目标会静默退化为 copy 模式，把 pi 目录写成本地副本而不是 junction）；`--all` 会对本机所有已检测 agent 建链接，本仓库只需要 pi，不要用。
 
 ## 同步上游
 
