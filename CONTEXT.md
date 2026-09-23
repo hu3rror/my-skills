@@ -6,7 +6,7 @@ The version-controlled single home of every shared agent skill, organized by ups
 
 **Aggregation repo**:
 The version-controlled home of all shared skills, organized by upstream source; the only content source for the distribution chain.
-_Avoid_: skills store (confused with the canonical skills store), my-skills (this repo's proper name, not the concept)
+_Avoid_: skills store (confused with the canonical skills store), my-skills (this repo's proper name, not the concept), upstream (reserved for the external vendored sources)
 
 **Consolidated copy**:
 A skill's file as it lives in the aggregation repo — the middle copy between the upstream original and the canonical-store copy, and the one that carries patches.
@@ -26,7 +26,7 @@ _Avoid_: sync script (too generic)
 
 **Junction**:
 The link type in `~/.pi/agent/skills` that exposes canonical-store skills to pi without copying. The pi config hosts no skill copies — junctions only.
-_Avoid_: symlink (a different Windows mechanism)
+_Avoid_: symlink (a different Windows mechanism), pi skills (ambiguous with pi-specific skill)
 
 **Upstream**:
 An external skill source vendored into the repo (mattpocock/skills, yetone/kill-ai-slop, cloudflare). Never consumed directly by the distribution chain. Provenance — the traced attribution of a skill to its upstream (`~/.agents/.skill-lock.json`) — decides the source directory; unattributed skills wait under `skills/other/`.
@@ -49,6 +49,16 @@ _Avoid_: update, diff
 **Pending-update issue**:
 The GitHub issue that records a pending update for the maintainer to act on. Open while the update is pending; closed by the freshness check once the copies are current again.
 _Avoid_: notification issue, alert
+
+## Stray recovery
+
+**Stray skill** (游离技能):
+A skill present in the canonical skills store that the distribution chain does not track, or whose content differs from the aggregation repo's consolidated copy. A new stray was written directly into the store; a modified stray is a local edit to a tracked copy that the next update or distribution would overwrite. Both are recovered by consolidation.
+_Avoid_: orphan (reserved for unattributed upstream provenance), loose skill
+
+**Consolidation** (回收):
+The action of copying a stray skill into the aggregation repo — `skills/self/` for self-authored content, `skills/other/` while provenance is unknown — and, for a modified vendored skill, recording the deviation as a `PATCHES.md` row so vendor sync never overwrites it. Runs before the next distribution, never after.
+_Avoid_: write-back, sync back (imply a copy direction the store does not own)
 
 ## Patches
 
