@@ -13,6 +13,19 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 
 Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
 
+## Closing tickets
+
+Attach the verification report in a **single write** — `gh issue close <number> --comment "<AC-by-AC report>"` — instead of `comment` then `close`. One write halves the exposure window when the network is flaky (next section) and never leaves an orphaned report comment behind.
+
+## GitHub write hiccups
+
+Local `gh` writes (comment / close / edit) intermittently fail with `unexpected EOF` on the GraphQL POST while GETs stay healthy and no proxy is configured. That signature is transient network jitter, not a config problem — it self-heals in minutes, so work through it in this order instead of re-deriving a fix:
+
+1. **Dedupe before retrying.** EOF means the request may or may not have landed, and a comment POST is not idempotent — blind retries duplicate comments. Run `gh issue view <number> --json comments` and skip (or delete) an identical body first.
+2. **Retry with backoff**: at most 3 attempts at 3s / 10s / 30s, covering the jitter window.
+3. **Degrade to REST**: the comment/close commands are GraphQL-backed; if they keep EOFing, POST the same body via `gh api --method POST repos/<owner>/<repo>/issues/<number>/comments --input -`.
+4. **Escalate**: after the above, stop retrying and hand the user the exact manual command. The transient window can outlast the session; a failed write the user runs beats a duplicated comment.
+
 ## Pull requests as a triage surface
 
 **PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/triage` reads this flag.)_
