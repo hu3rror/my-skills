@@ -50,6 +50,22 @@ node scripts/vendor-sync.mjs
 
 补丁文件（`PATCHES.md` A 类）永不被覆盖，会报告为需要手动合并；上游删除的文件只报告、不删除，由维护者手动 `git rm`。GitHub Actions 提供同名 `vendor-sync` 手动工作流（`workflow_dispatch`，无定时），在日志中输出脚本摘要。
 
+## 回收游离技能（分发前）
+
+canonical store 是派生目标：直接写进 `~/.agents/skills` 的内容会被下一次分发或更新静默覆盖。每次跑分发链之前——或本地改动过任何技能之后——先跑一次回收（consolidation），把分发链不追踪的内容救回聚合仓库：
+
+- **new stray（新游离技能）**——lock 文件与仓库都没有记录的 store 技能（直接写进 store 或 pi junction farm）——按需复制进仓库：自创内容放 `skills/self/<name>`，来源不明放 `skills/other/<name>`；
+- **modified stray（修改过的游离技能）**——内容与 consolidated copy 不一致的 tracked 技能——输出 diff 摘要与 `PATCHES.md` 行模板；补丁行要先补进清单再回收（ADR-0002），consolidation 永不自动复制 modified stray。
+
+对 pi 说 "consolidate stray skills"（`skills/self/consolidate-strays`，模型调用、description 限定范围，其他 harness 不会误触发），或直接跑脚本：
+
+```bash
+node scripts/consolidate-strays.mjs             # dry-run 报告（默认，只读）
+node scripts/consolidate-strays.mjs --apply <name> [--to self]  # 把某个 new stray 复制进仓库
+```
+
+默认 dry-run 不写任何文件；apply 保留 store 副本不动；回收的内容要真正生效，还需 commit + push + 再分发一次。
+
 ## 约定
 
 - 每个技能一个目录，内含 `SKILL.md`（目录 + SKILL.md，兼容所有支持该规范的 harness）

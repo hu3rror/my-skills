@@ -85,6 +85,34 @@ single `pending-update` issue assigned to the maintainer — opened when a sourc
 has changes not yet vendored, closed again once the copies are current. It
 never modifies files; the real sync stays manual.
 
+## Consolidate stray skills (before distributing)
+
+The canonical store is a derived target: content written directly into
+`~/.agents/skills` is silently overwritten by the next distribution or update.
+Run consolidation before every distribution run — or after any local skill
+edit — to recover what the chain does not track into the aggregation repo:
+
+- a **new stray** — a store skill absent from the lock file and the repo
+  (written straight into the store or the pi junction farm) — is copied into
+  the repo on request: `skills/self/<name>` when self-authored,
+  `skills/other/<name>` while provenance is unknown;
+- a **modified stray** — a tracked skill whose store content differs from its
+  consolidated copy — is reported with a diff summary and a `PATCHES.md` row
+  template; the row must exist before the copy-back (ADR-0002), and
+  consolidation never copies a modified stray on its own.
+
+Say "consolidate stray skills" (`skills/self/consolidate-strays`, model-invoked
+with a description scoped to consolidation requests so other harnesses never
+fire it), or run the script directly:
+
+```bash
+node scripts/consolidate-strays.mjs             # dry-run report (default; read-only)
+node scripts/consolidate-strays.mjs --apply <name> [--to self]  # copy one new stray into the repo
+```
+
+Dry-run is the default and writes nothing; apply keeps the store copy in
+place; recovered edits go live only after commit + push + a distribution run.
+
 ## Conventions
 
 - One directory per skill, containing `SKILL.md` (directory + SKILL.md works
