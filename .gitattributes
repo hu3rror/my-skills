@@ -1,0 +1,4 @@
+# Normalize all text to LF: the canonical store (installed via npx skills on
+# Windows) can carry CRLF, and byte comparisons against it must not trip on
+# line endings the repo does not own.
+* text=auto eol=lf
