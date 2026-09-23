@@ -17,7 +17,7 @@ Adapt an extension to the **latest published pi version** by default, or to an e
 
 Resolve `target` in this order: explicit `target=<version>` argument → else the latest published version (npm `dist-tags.latest` for `@earendil-works/pi-coding-agent`; cross-check GitHub releases). **Never** infer target from prior reports, prior syncs, CONTEXT.md, ADRs, git history, or installed devDependencies — the report is write-only.
 
-Record the resolved version. If it equals the installed version, skip steps 2–4 but still run the adoption survey (step 5).
+Record the resolved version. If it equals the installed version, skip the fix loop (steps 3–4) but still run step 2's typecheck — the seam catches pre-existing repo debt, not just SDK drift — and run the adoption survey (step 5).
 
 Locate the **installed** package (for the baseline comparison) via:
 
@@ -46,7 +46,7 @@ Also verify the **runtime export surface** the extension uses: every `from "@ear
 
 ### 3. Triage each error class
 
-Map every error class to a decision: type-only fix, contract change, or behavior-affecting. The Reference table lists known classes from a past curation point; the changelog and the real types override the table. Flag behavior-affecting classes — they change runtime behavior, not just types, and need the user's sign-off.
+Map every error class to a decision: type-only fix, contract change, or behavior-affecting. The Reference table lists known classes from a past curation point; the changelog and the real types override the table. Flag behavior-affecting classes — they change runtime behavior, not just types, and need the user's sign-off. Classify an error as drift only after a clean comparison run against the repo's pinned types: an error set that reproduces identically is pre-existing repo debt — version-independent; triage it as repo hygiene and check whether the repo has a gate.
 
 **Mirror-drift check (extensions that mirror pi internals)**: a green typecheck does not mean the extension's *runtime* semantics still match pi. Extensions that transcribe pi internals — retry/overflow classification tables, mirrored layout resolvers, copied `streamFn` wiring — must be diffed against the target version's actual dist sources (e.g. `pi-ai/dist/utils/retry.js`, `pi-ai/dist/utils/overflow.js`, `pi-tui/dist/tui.js`, `pi-coding-agent/dist/core/settings-manager.js`). Read the target changelog's **Changed and Fixed sections too, not just Breaking Changes** — semantic changes (e.g. a 60s backoff cap added in a 0.86.x Fixed entry) hide under Fixed. Line-number claims in comments/ADRs (`tui.js L781-902`) drift between versions: re-verify each against the target dist. Each drift is a behavior-affecting class needing the user's sign-off.
 
