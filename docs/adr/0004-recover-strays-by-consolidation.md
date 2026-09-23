@@ -13,7 +13,7 @@ Agent edits to skills land in the canonical skills store: pi reports skill locat
 Keep pi reading the canonical skills store. Add a manual, on-demand consolidation mechanism that, before the next distribution, copies stray skills from the store into the aggregation repo:
 
 - A **new stray** (a store skill the distribution chain does not track, e.g. written directly into `~/.pi/agent/skills/`) is copied to `skills/self/` when self-authored, or `skills/other/` while provenance is unknown.
-- A **modified stray** (a tracked skill whose store content differs from its consolidated copy) is copied back into the consolidated copy and recorded as a `PATCHES.md` row per ADR-0002, so vendor sync never overwrites it.
+- A **modified stray** (a tracked skill whose store content differs from its consolidated copy) is recovered by recording the deviation as a `PATCHES.md` row per ADR-0002 and then copying the store content back into the consolidated copy. The script is report-only here: it prints the diff and the row template, and the copy-back happens only after the row exists (SKILL.md step 3), so vendor sync never overwrites the edit.
 - The store copy is left in place; consolidation never deletes from the store. Making the recovered edit live in the store requires commit + push + a re-run of the distribution chain.
 - Trigger: a script (`scripts/consolidate-strays.mjs`) wrapped in a skill (`skills/self/consolidate-strays/`), invoked manually. No automatic triggering.
 

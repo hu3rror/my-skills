@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // consolidate-strays.mjs — classification and recovery for the canonical
 // skills store against the distribution chain's lock file and the aggregation
-// repo's consolidated copies (stray-skill consolidation spec, #9: T1
-// classification report, T2 explicit apply, T3 modified-stray diff report
-// and patch-manifest row template).
+// repo's consolidated copies (stray-skill consolidation spec): dry-run
+// classification report, explicit apply for new strays, and a diff report
+// with patch-manifest row templates for modified strays.
 //
 // Every skill found in the store (and any real, non-junction directory in the
 // pi junction farm) is classified as one of:
@@ -19,11 +19,11 @@
 // modified. An explicit --apply <name> copies that new stray into the repo —
 // skills/other/<name> by default (provenance unknown), skills/self/<name> with
 // --to self. The store copy stays in place; running apply again is a no-op.
-// Modified strays are report-only: apply never copies one — their recovery is
-// T3, where the dry-run report prints a line-level diff summary of store
-// content versus the consolidated copy plus a PATCHES.md row template per
-// changed file, so the deviation can be recorded before the consolidated copy
-// ever changes (ADR-0002). All roots are parameterized with home-derived
+// Modified strays are report-only: apply never copies one — the dry-run
+// report prints a line-level diff summary of store content versus the
+// consolidated copy plus a PATCHES.md row template per changed file, so the
+// deviation can be recorded before the consolidated copy ever changes
+// (ADR-0002). All roots are parameterized with home-derived
 // defaults so fixtures drive
 // the same logic offline. Zero dependencies; runs under PowerShell and in WSL.
 
@@ -132,7 +132,7 @@ export function directoriesEqual(a, b) {
   return true;
 }
 
-// --- diff report (T3) -------------------------------------------------------
+// --- diff report -------------------------------------------------------------
 
 // Split a file's content into lines under the same normalized view as
 // normalizedContent (the trailing newline is already dropped, so "a\n" and
@@ -183,7 +183,7 @@ function diffLines(storeLines, copyLines) {
 }
 
 // Compare two skill directories and describe every difference, file by file
-// (the T3 diff summary). "added" files exist only in the store, "removed"
+// (the diff summary). "added" files exist only in the store, "removed"
 // only in the consolidated copy; both carry whole-file line ops so content is
 // visible. "modified" files carry aligned ops plus added/removed counts.
 // Binary (NUL-containing) files get no line diff — nothing is ever mangled —
@@ -348,7 +348,7 @@ function copyTree(src, dest) {
 // by default while provenance is unknown, skills/self/<name> when home is
 // "self". Classification runs fresh from the same inputs, so the action is
 // idempotent: a skill already consolidated (current) is a no-op, and a
-// modified stray is never copied (its recovery is report-only, T3). The store
+// modified stray is never copied (its recovery is report-only). The store
 // copy is left in place. Returns { applied, name, kind, destination }.
 export function applyStray({ store, pi, lock, repo, name, home = "other" }) {
   if (home !== "self" && home !== "other") {
@@ -374,7 +374,7 @@ export function applyStray({ store, pi, lock, repo, name, home = "other" }) {
 
 // --- report ---------------------------------------------------------------
 
-// Diff report and patch-manifest row templates for one modified stray (T3).
+// Diff report and patch-manifest row templates for one modified stray.
 // This is the recovery surface for a modified stray: the maintainer reads the
 // diff to compose the PATCHES.md patch summary, fills the row template in,
 // and only then recovers the edit — the consolidated copy never changes before

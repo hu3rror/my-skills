@@ -1,6 +1,6 @@
-// Fixture-based tests for scripts/consolidate-strays.mjs (T1: dry-run
-// classification report; T2: explicit apply; T3: modified-stray diff report
-// and patch-manifest row template). Offline and deterministic: fake store,
+// Fixture-based tests for scripts/consolidate-strays.mjs: dry-run
+// classification report, explicit apply, and the modified-stray diff report
+// with patch-manifest row templates. Offline and deterministic: fake store,
 // fake pi junction farm, fake lock file, fake repo layout in temp
 // directories. Asserts external behavior (classification, report output,
 // copied files, untouched store, idempotent re-runs) via the Node built-in
@@ -682,7 +682,7 @@ test("CLI apply errors on a modified stray and on an invalid --to value", () => 
   }
 });
 
-// --- modified stray recovery (T3): diff report + patch-manifest row ---------
+// --- modified stray recovery: diff report + patch-manifest row --------------
 
 test("a modified stray prints a diff summary of the store content versus the consolidated copy", () => {
   const d = fixture();
@@ -805,7 +805,7 @@ test("reporting a modified stray modifies neither the consolidated copy nor the 
   }
 });
 
-// --- diffDirectories (T3) ----------------------------------------------------
+// --- diffDirectories ---------------------------------------------------------
 
 test("diffDirectories reports added, removed, and modified files with aligned line ops", () => {
   const d = fixture();
