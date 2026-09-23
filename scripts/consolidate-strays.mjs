@@ -261,14 +261,18 @@ export function diffDirectories(storeDir, copyDir) {
 
 // --- classification ---------------------------------------------------------
 
-// Index the repo's consolidated copies by skill name, wherever they live
-// (skills/self/, skills/other/, or a vendored source tree). A consolidated
-// copy is any directory named like the skill that holds its SKILL.md.
-function indexRepoCopies(repoRoot) {
+// Index the repo's consolidated copies by skill name, under the two
+// consolidation homes only: skills/self/ (the self-authored home) and
+// skills/other/ (the unattributed home). Those are the only destinations
+// consolidation copies strays into (glossary: consolidation). Vendored source
+// trees are never consolidation homes, so an untracked store skill whose name
+// merely collides with a vendored skill is classified as a new stray
+// (adoptable) instead of being misattributed to upstream — the lock file is
+// the authoritative tracked set (spec, implementation decision).
+function indexConsolidatedCopies(repoRoot) {
   const map = new Map();
-  const skillsRoot = join(repoRoot, "skills");
-  if (!existsSync(skillsRoot)) return map;
   const walk = (d) => {
+    if (!existsSync(d)) return;
     for (const entry of readdirSync(d, { withFileTypes: true })) {
       if (!entry.isDirectory() || entry.isSymbolicLink()) continue;
       const p = join(d, entry.name);
@@ -279,18 +283,20 @@ function indexRepoCopies(repoRoot) {
       }
     }
   };
-  walk(skillsRoot);
+  walk(join(repoRoot, "skills", "self"));
+  walk(join(repoRoot, "skills", "other"));
   return map;
 }
 
 // Classify scanned skills against the lock's tracked set and the repo's
 // consolidated copies. A skill is a new stray only when it is absent from the
-// lock AND not consolidated in the repo; if a consolidated copy exists
-// somewhere, the skill compares against it instead (content equal -> current,
-// differing -> modified stray).
+// lock AND has no consolidated copy in a consolidation home; an untracked
+// skill comparing against a copy in one of the two homes catches the
+// already-consolidated-without-lock-regeneration flow (content equal ->
+// current, differing -> modified stray).
 export function classifyStrays(skills, lock, repoRoot) {
   const tracked = (lock && lock.skills) || {};
-  const repoCopies = indexRepoCopies(repoRoot);
+  const repoCopies = indexConsolidatedCopies(repoRoot);
   return skills.map((skill) => {
     const lockEntry = tracked[skill.name];
     const repoCopy = lockEntry

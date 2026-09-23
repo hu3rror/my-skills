@@ -266,6 +266,42 @@ test("a store skill absent from the lock but differing from its repo consolidate
   }
 });
 
+test("an untracked store skill whose name collides with a vendored repo copy is a new stray, adoptable", () => {
+  const d = fixture();
+  try {
+    // The lock is the authoritative tracked set and a vendored source tree is
+    // never a consolidation home (glossary: consolidation), so a name
+    // collision must not misattribute the store skill to upstream (US5/US9/10:
+    // a new stray stays adoptable, to self or other).
+    makeTree(d.store, { "collide/SKILL.md": "homegrown content" });
+    makeTree(d.repo, { "skills/mattpocock/engineering/collide/SKILL.md": "vendored content" });
+    writeLock(d.lock, {});
+
+    const { classified } = consolidate({
+      store: d.store,
+      pi: d.pi,
+      lock: d.lock,
+      repo: d.repo,
+    });
+    const c = classified.find((x) => x.name === "collide");
+    assert.equal(c.kind, "new-stray");
+    assert.equal(c.destination, "skills/other/collide");
+
+    const result = applyStray({
+      store: d.store,
+      pi: d.pi,
+      lock: d.lock,
+      repo: d.repo,
+      name: "collide",
+      home: "self",
+    });
+    assert.equal(result.applied, true);
+    assert.equal(result.destination, "skills/self/collide");
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
 // --- dry-run safety -----------------------------------------------------------
 
 test("CLI exits 0 with no strays and 2 when strays exist", () => {
