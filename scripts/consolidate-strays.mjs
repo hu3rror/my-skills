@@ -2,7 +2,8 @@
 // consolidate-strays.mjs — classification and recovery for the canonical
 // skills store against the distribution chain's lock file and the aggregation
 // repo's consolidated copies (stray-skill consolidation spec, #9: T1
-// classification report, T2 explicit apply).
+// classification report, T2 explicit apply, T3 modified-stray diff report
+// and patch-manifest row template).
 //
 // Every skill found in the store (and any real, non-junction directory in the
 // pi junction farm) is classified as one of:
@@ -18,8 +19,12 @@
 // modified. An explicit --apply <name> copies that new stray into the repo —
 // skills/other/<name> by default (provenance unknown), skills/self/<name> with
 // --to self. The store copy stays in place; running apply again is a no-op.
-// Modified strays are report-only: apply never copies one (their recovery is
-// T3). All roots are parameterized with home-derived defaults so fixtures drive
+// Modified strays are report-only: apply never copies one — their recovery is
+// T3, where the dry-run report prints a line-level diff summary of store
+// content versus the consolidated copy plus a PATCHES.md row template per
+// changed file, so the deviation can be recorded before the consolidated copy
+// ever changes (ADR-0002). All roots are parameterized with home-derived
+// defaults so fixtures drive
 // the same logic offline. Zero dependencies; runs under PowerShell and in WSL.
 
 import {
@@ -84,22 +89,37 @@ function listFiles(dir) {
   return out;
 }
 
-// Whether two directories hold the same files with the same content. Text
-// files are compared modulo line endings: a Windows-installed store carries
-// CRLF while the repo normalizes to LF, and that drift is a distribution
-// artifact, not a local edit. Files that are not UTF-8 text (e.g. source
-// files with NUL bytes) are compared byte-exact so nothing is ever mangled.
-function normalizedContent(buf) {
-  if (buf.includes(0)) return buf; // binary / non-UTF-8 text: byte-exact
-  return Buffer.from(buf.toString("utf8").replace(/\r\n/g, "\n").replace(/\r/g, "\n"), "utf8");
+// A directory as a map of portable relative path -> absolute file path. Both
+// the equality gate (directoriesEqual) and the diff report (diffDirectories)
+// share this view so the two can never disagree about which files exist.
+function filesOf(root) {
+  const map = new Map();
+  if (!existsSync(root)) return map;
+  for (const f of listFiles(root)) map.set(toPortable(relative(root, f)), f);
+  return map;
 }
 
+// The one normalized view of a text file's content. Line endings collapse to
+// LF (a Windows-installed store carries CRLF while the repo normalizes to LF
+// — that drift is a distribution artifact, not a local edit) and a single
+// trailing newline is dropped (a save artifact, not content). Comparing
+// through this view keeps the classification gate and the diff report
+// consistent: what compares equal here is never reported, so a reported
+// deviation always has a non-empty diff. Files that are not UTF-8 text (e.g.
+// with NUL bytes) stay byte-exact so nothing is ever mangled.
+function normalizedText(buf) {
+  let text = buf.toString("utf8").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  if (text.endsWith("\n")) text = text.slice(0, -1);
+  return text;
+}
+
+function normalizedContent(buf) {
+  if (buf.includes(0)) return buf; // binary / non-UTF-8 text: byte-exact
+  return Buffer.from(normalizedText(buf), "utf8");
+}
+
+// Whether two directories hold the same files with the same content.
 export function directoriesEqual(a, b) {
-  const filesOf = (root) => {
-    const map = new Map();
-    for (const f of listFiles(root)) map.set(toPortable(relative(root, f)), f);
-    return map;
-  };
   const fa = filesOf(a);
   const fb = filesOf(b);
   if (fa.size !== fb.size) return false;
@@ -110,6 +130,133 @@ export function directoriesEqual(a, b) {
     if (!normalizedContent(readFileSync(pa)).equals(normalizedContent(readFileSync(pb)))) return false;
   }
   return true;
+}
+
+// --- diff report (T3) -------------------------------------------------------
+
+// Split a file's content into lines under the same normalized view as
+// normalizedContent (the trailing newline is already dropped, so "a\n" and
+// "a" both yield ["a"]). An empty file yields no lines; a file holding one
+// blank line yields [""].
+function toLines(buf) {
+  const lines = normalizedText(buf).split("\n");
+  if (lines.length === 1 && lines[0] === "") return [];
+  return lines;
+}
+
+// Line-level diff between two texts with an LCS alignment. "-" lines exist
+// only in the consolidated copy (removed by the local edit) and "+" lines
+// only in the store (added by it) — the orientation a maintainer reads
+// against a PATCHES.md patch summary like "+2 lines appended: ...". Skill
+// files are small, so the O(m*n) DP table is fine for a manual diagnostic;
+// pathological sizes return null and the caller falls back to counts only.
+function diffLines(storeLines, copyLines) {
+  const m = storeLines.length;
+  const n = copyLines.length;
+  if (m * n > 4_000_000) return null;
+  const lcs = new Int32Array((m + 1) * (n + 1));
+  for (let i = m - 1; i >= 0; i--) {
+    for (let j = n - 1; j >= 0; j--) {
+      lcs[i * (n + 1) + j] =
+        storeLines[i] === copyLines[j]
+          ? lcs[(i + 1) * (n + 1) + j + 1] + 1
+          : Math.max(lcs[(i + 1) * (n + 1) + j], lcs[i * (n + 1) + j + 1]);
+    }
+  }
+  const ops = [];
+  let i = 0;
+  let j = 0;
+  while (i < m && j < n) {
+    if (storeLines[i] === copyLines[j]) {
+      i++;
+      j++;
+    } else if (lcs[i * (n + 1) + j + 1] >= lcs[(i + 1) * (n + 1) + j]) {
+      // Deletions first (unified-diff order): "-" is copy-only, "+" is store-only.
+      ops.push({ t: "-", s: copyLines[j++] });
+    } else {
+      ops.push({ t: "+", s: storeLines[i++] });
+    }
+  }
+  while (i < m) ops.push({ t: "+", s: storeLines[i++] });
+  while (j < n) ops.push({ t: "-", s: copyLines[j++] });
+  return ops;
+}
+
+// Compare two skill directories and describe every difference, file by file
+// (the T3 diff summary). "added" files exist only in the store, "removed"
+// only in the consolidated copy; both carry whole-file line ops so content is
+// visible. "modified" files carry aligned ops plus added/removed counts.
+// Binary (NUL-containing) files get no line diff — nothing is ever mangled —
+// and files differing only in line endings or a trailing newline (the same
+// normalized view directoriesEqual compares) are no deviation at all.
+// Entries are sorted by relative path so the report is deterministic.
+export function diffDirectories(storeDir, copyDir) {
+  const fa = filesOf(storeDir);
+  const fb = filesOf(copyDir);
+  const out = [];
+  for (const rel of [...new Set([...fa.keys(), ...fb.keys()])].sort()) {
+    const pa = fa.get(rel);
+    const pb = fb.get(rel);
+    let entry;
+    if (pa === undefined) {
+      const buf = readFileSync(pb);
+      if (buf.includes(0)) {
+        entry = { rel, status: "removed", binary: true, added: 0, removed: 0, ops: null };
+      } else {
+        const lines = toLines(buf);
+        entry = {
+          rel,
+          status: "removed",
+          binary: false,
+          added: 0,
+          removed: lines.length,
+          ops: lines.map((s) => ({ t: "-", s })),
+        };
+      }
+    } else if (pb === undefined) {
+      const buf = readFileSync(pa);
+      if (buf.includes(0)) {
+        entry = { rel, status: "added", binary: true, added: 0, removed: 0, ops: null };
+      } else {
+        const lines = toLines(buf);
+        entry = {
+          rel,
+          status: "added",
+          binary: false,
+          added: lines.length,
+          removed: 0,
+          ops: lines.map((s) => ({ t: "+", s })),
+        };
+      }
+    } else {
+      const ba = readFileSync(pa);
+      const bb = readFileSync(pb);
+      if (ba.equals(bb)) continue;
+      if (ba.includes(0) || bb.includes(0)) {
+        entry = { rel, status: "modified", binary: true, added: 0, removed: 0, ops: null };
+      } else {
+        const aLines = toLines(ba);
+        const bLines = toLines(bb);
+        if (aLines.length === bLines.length && aLines.every((l, idx) => l === bLines[idx])) {
+          continue;
+        }
+        const ops = diffLines(aLines, bLines);
+        entry =
+          ops === null
+            ? { rel, status: "modified", binary: false, added: aLines.length, removed: bLines.length, ops: null }
+            : {
+                rel,
+                status: "modified",
+                binary: false,
+                added: ops.filter((o) => o.t === "+").length,
+                removed: ops.filter((o) => o.t === "-").length,
+                ops,
+              };
+      }
+    }
+    out.push(entry);
+  }
+  return out;
 }
 
 // --- classification ---------------------------------------------------------
@@ -221,6 +368,54 @@ export function applyStray({ store, pi, lock, repo, name, home = "other" }) {
 
 // --- report ---------------------------------------------------------------
 
+// Diff report and patch-manifest row templates for one modified stray (T3).
+// This is the recovery surface for a modified stray: the maintainer reads the
+// diff to compose the PATCHES.md patch summary, fills the row template in,
+// and only then recovers the edit — the consolidated copy never changes before
+// its patch row exists, so vendor sync cannot overwrite the edit (ADR-0002).
+// A row template is emitted per changed file (ADR-0002: every patch entry must
+// map to a real file in the repo); the consolidated copy is not changing for
+// a file removed from the store, so that case gets no row.
+function modifiedStrayDetail(c, repo) {
+  const copyDir = join(repo, c.destination);
+  const diffs = diffDirectories(c.dir, copyDir);
+  const lines = ["    Diff summary (store vs consolidated copy):"];
+  const count = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  for (const e of diffs) {
+    if (e.binary) lines.push(`      ${e.rel}: binary - differs (byte compare)`);
+    else if (e.status === "added") lines.push(`      ${e.rel}: added in store`);
+    else if (e.status === "removed") lines.push(`      ${e.rel}: removed from store`);
+    else if (e.ops === null) {
+      lines.push(
+        `      ${e.rel}: ${count(e.added, "line")} in store, ${count(e.removed, "line")} in the consolidated copy (alignment skipped)`
+      );
+    } else {
+      lines.push(`      ${e.rel}: ${count(e.added, "line")} added, ${count(e.removed, "line")} removed`);
+    }
+    if (e.ops) for (const op of e.ops) lines.push(`        ${op.t} ${op.s}`);
+  }
+  if (!existsSync(copyDir)) {
+    lines.push(
+      "    (consolidated copy missing - no patch-manifest row applies; restore the copy before recovery)"
+    );
+    return lines;
+  }
+  const templates = [];
+  for (const e of diffs) {
+    if (e.status === "removed") continue;
+    templates.push(
+      `      | <next #> | new | \`${toPortable(join(c.destination, e.rel))}\` | <patch summary: see diff above> | <upstream counterpart> | <verification method> |`
+    );
+  }
+  if (templates.length > 0) {
+    lines.push(
+      "    Patch-manifest row templates (append as A-class rows in PATCHES.md, completing the placeholders):"
+    );
+    lines.push(...templates);
+  }
+  return lines;
+}
+
 export function buildReport({ store, pi, lock, repo, classified }) {
   const byKind = { "new-stray": [], "modified-stray": [], current: [] };
   for (const c of classified) byKind[c.kind].push(c);
@@ -239,7 +434,10 @@ export function buildReport({ store, pi, lock, repo, classified }) {
   for (const kind of ["new-stray", "modified-stray"]) {
     if (byKind[kind].length > 0) {
       lines.push(`${kind} (${byKind[kind].length})`);
-      for (const c of byKind[kind]) lines.push(`  ${c.name} -> ${c.destination}`);
+      for (const c of byKind[kind]) {
+        lines.push(`  ${c.name} -> ${c.destination}`);
+        if (c.kind === "modified-stray") lines.push(...modifiedStrayDetail(c, repo));
+      }
       lines.push("");
     }
   }
@@ -348,7 +546,9 @@ function usage() {
   return `Usage: node scripts/consolidate-strays.mjs [options]
 
 Classifies every store skill as a new stray, a modified stray, or current and
-prints a dry-run report (read-only; nothing is written or modified). With
+prints a dry-run report (read-only; nothing is written or modified). Modified
+strays are reported with a diff summary and a PATCHES.md row template — the
+script never copies one; its patch row must exist first (ADR-0002). With
 --apply, copies one new stray into the repo instead.
 
 Options:

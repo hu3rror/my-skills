@@ -1,6 +1,7 @@
 // Fixture-based tests for scripts/consolidate-strays.mjs (T1: dry-run
-// classification report; T2: explicit apply). Offline and deterministic: fake
-// store, fake pi junction farm, fake lock file, fake repo layout in temp
+// classification report; T2: explicit apply; T3: modified-stray diff report
+// and patch-manifest row template). Offline and deterministic: fake store,
+// fake pi junction farm, fake lock file, fake repo layout in temp
 // directories. Asserts external behavior (classification, report output,
 // copied files, untouched store, idempotent re-runs) via the Node built-in
 // test runner — the repo gains no dependency.
@@ -25,6 +26,7 @@ import { spawnSync } from "node:child_process";
 import {
   applyStray,
   consolidate,
+  diffDirectories,
   directoriesEqual,
   scanSkillDirectories,
 } from "./consolidate-strays.mjs";
@@ -639,6 +641,256 @@ test("CLI apply errors on a modified stray and on an invalid --to value", () => 
     );
     assert.equal(badTo.status, 1);
     assert.match(badTo.stderr, /invalid --to value "vendor"/);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+// --- modified stray recovery (T3): diff report + patch-manifest row ---------
+
+test("a modified stray prints a diff summary of the store content versus the consolidated copy", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, { "tracked/SKILL.md": "alpha\nBETA-edited\ngamma\ndelta-new\n" });
+    makeTree(d.repo, { "skills/tracked/SKILL.md": "alpha\nbeta\ngamma\n" });
+    writeLock(d.lock, { tracked: { skillPath: "skills/tracked/SKILL.md" } });
+
+    const { report } = consolidate({
+      store: d.store,
+      pi: d.pi,
+      lock: d.lock,
+      repo: d.repo,
+    });
+    assert.match(report, /Diff summary \(store vs consolidated copy\):/);
+    assert.match(report, /SKILL\.md: 2 lines added, 1 line removed/);
+    assert.match(report, /- beta/);
+    assert.match(report, /\+ BETA-edited/);
+    assert.match(report, /\+ delta-new/);
+    // unchanged lines never appear in the diff
+    assert.doesNotMatch(report, /- alpha/);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("the report includes a patch-manifest row template for each changed file", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, {
+      "tracked/SKILL.md": "locally edited",
+      "tracked/refs/notes.md": "new notes",
+    });
+    makeTree(d.repo, { "skills/tracked/SKILL.md": "original" });
+    writeLock(d.lock, { tracked: { skillPath: "skills/tracked/SKILL.md" } });
+
+    const { report } = consolidate({
+      store: d.store,
+      pi: d.pi,
+      lock: d.lock,
+      repo: d.repo,
+    });
+    assert.match(report, /Patch-manifest row templates/);
+    assert.match(
+      report,
+      /\| <next #> \| new \| `skills\/tracked\/SKILL\.md` \| <patch summary: see diff above> \| <upstream counterpart> \| <verification method> \|/
+    );
+    assert.match(
+      report,
+      /\| <next #> \| new \| `skills\/tracked\/refs\/notes\.md` \| <patch summary: see diff above> \| <upstream counterpart> \| <verification method> \|/
+    );
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("a skill whose content matches its consolidated copy gets no diff and no row template", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, { "tracked/SKILL.md": "same" });
+    makeTree(d.repo, { "skills/tracked/SKILL.md": "same" });
+    writeLock(d.lock, { tracked: { skillPath: "skills/tracked/SKILL.md" } });
+
+    const { report } = consolidate({
+      store: d.store,
+      pi: d.pi,
+      lock: d.lock,
+      repo: d.repo,
+    });
+    assert.doesNotMatch(report, /Diff summary|Patch-manifest row/);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("a store file differing only in a trailing newline is current, not reported", () => {
+  const d = fixture();
+  try {
+    // A single trailing newline is a save artifact, not a local edit (the same
+    // policy as CRLF drift): the classification gate and the diff report share
+    // one normalized view, so nothing is reported with an empty diff summary.
+    mkdirSync(join(d.store, "tracked"), { recursive: true });
+    mkdirSync(join(d.repo, "skills", "tracked"), { recursive: true });
+    writeFileSync(join(d.store, "tracked", "SKILL.md"), "same\n");
+    writeFileSync(join(d.repo, "skills", "tracked", "SKILL.md"), "same");
+    writeLock(d.lock, { tracked: { skillPath: "skills/tracked/SKILL.md" } });
+
+    const { classified, report } = consolidate({
+      store: d.store,
+      pi: d.pi,
+      lock: d.lock,
+      repo: d.repo,
+    });
+    assert.equal(classified.find((c) => c.name === "tracked").kind, "current");
+    assert.doesNotMatch(report, /Diff summary|Patch-manifest row/);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("reporting a modified stray modifies neither the consolidated copy nor the store", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, { "tracked/SKILL.md": "locally edited", "tracked/refs/notes.md": "new" });
+    makeTree(d.repo, { "skills/tracked/SKILL.md": "original" });
+    writeLock(d.lock, { tracked: { skillPath: "skills/tracked/SKILL.md" } });
+    const before = {
+      store: snapshot(d.store),
+      repo: snapshot(d.repo),
+      lock: snapshot(dirname(d.lock)),
+    };
+
+    consolidate({ store: d.store, pi: d.pi, lock: d.lock, repo: d.repo });
+
+    assert.deepEqual(snapshot(d.store), before.store);
+    assert.deepEqual(snapshot(d.repo), before.repo);
+    assert.deepEqual(snapshot(dirname(d.lock)), before.lock);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+// --- diffDirectories (T3) ----------------------------------------------------
+
+test("diffDirectories reports added, removed, and modified files with aligned line ops", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, {
+      "tracked/SKILL.md": "alpha\nmodified\ngamma\n",
+      "tracked/only-in-store.md": "store line\n",
+    });
+    makeTree(d.repo, {
+      "skills/tracked/SKILL.md": "alpha\nbeta\ngamma\n",
+      "skills/tracked/only-in-copy.md": "copy line\n",
+    });
+
+    const diffs = diffDirectories(join(d.store, "tracked"), join(d.repo, "skills", "tracked"));
+    const byRel = Object.fromEntries(diffs.map((e) => [e.rel, e]));
+    assert.deepEqual(Object.keys(byRel).sort(), [
+      "SKILL.md",
+      "only-in-copy.md",
+      "only-in-store.md",
+    ]);
+    assert.equal(byRel["SKILL.md"].status, "modified");
+    assert.equal(byRel["SKILL.md"].added, 1);
+    assert.equal(byRel["SKILL.md"].removed, 1);
+    assert.deepEqual(byRel["SKILL.md"].ops.map((o) => o.t).join(""), "-+");
+    assert.equal(byRel["only-in-store.md"].status, "added");
+    assert.deepEqual(byRel["only-in-store.md"].ops, [{ t: "+", s: "store line" }]);
+    assert.equal(byRel["only-in-copy.md"].status, "removed");
+    assert.deepEqual(byRel["only-in-copy.md"].ops, [{ t: "-", s: "copy line" }]);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("diffDirectories flags binary differences without fabricating a line diff", () => {
+  const d = fixture();
+  try {
+    mkdirSync(join(d.store, "tracked"), { recursive: true });
+    mkdirSync(join(d.repo, "skills", "tracked"), { recursive: true });
+    writeFileSync(join(d.store, "tracked", "data.bin"), Buffer.from([0x00, 0x41, 0x00, 0x42]));
+    writeFileSync(join(d.repo, "skills", "tracked", "data.bin"), Buffer.from([0x00, 0x41, 0x00, 0x43]));
+
+    const [diff] = diffDirectories(join(d.store, "tracked"), join(d.repo, "skills", "tracked"));
+    assert.equal(diff.rel, "data.bin");
+    assert.equal(diff.binary, true);
+    assert.equal(diff.ops, null);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("diffDirectories ignores line-ending drift between store and repo copies", () => {
+  const d = fixture();
+  try {
+    mkdirSync(join(d.store, "tracked"), { recursive: true });
+    mkdirSync(join(d.repo, "skills", "tracked"), { recursive: true });
+    writeFileSync(join(d.store, "tracked", "SKILL.md"), "line1\r\nline2\r\n");
+    writeFileSync(join(d.repo, "skills", "tracked", "SKILL.md"), "line1\nline2\n");
+
+    assert.deepEqual(
+      diffDirectories(join(d.store, "tracked"), join(d.repo, "skills", "tracked")),
+      []
+    );
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("diffDirectories treats a missing consolidated copy as empty", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, { "tracked/SKILL.md": "hi\n" });
+
+    const diffs = diffDirectories(join(d.store, "tracked"), join(d.repo, "skills", "tracked"));
+    assert.equal(diffs.length, 1);
+    assert.equal(diffs[0].status, "added");
+    assert.equal(diffs[0].added, 1);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("diffDirectories reports a store-only binary file without line ops", () => {
+  const d = fixture();
+  try {
+    mkdirSync(join(d.store, "tracked"), { recursive: true });
+    writeFileSync(join(d.store, "tracked", "data.bin"), Buffer.from([0x00, 0x42, 0x00]));
+
+    const [diff] = diffDirectories(join(d.store, "tracked"), join(d.repo, "skills", "tracked"));
+    assert.equal(diff.status, "added");
+    assert.equal(diff.binary, true);
+    assert.equal(diff.ops, null);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("CLI dry-run reports a modified stray with a diff and a row template, touching nothing", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, { "tracked/SKILL.md": "locally edited" });
+    makeTree(d.repo, { "skills/tracked/SKILL.md": "original" });
+    writeLock(d.lock, { tracked: { skillPath: "skills/tracked/SKILL.md" } });
+    const repoBefore = snapshot(d.repo);
+    const storeBefore = snapshot(d.store);
+
+    const res = spawnSync(
+      process.execPath,
+      [SCRIPT, "--store", d.store, "--pi", d.pi, "--lock", d.lock, "--repo", d.repo],
+      { encoding: "utf8" }
+    );
+    assert.equal(res.status, 2);
+    assert.match(res.stdout, /modified-stray \(1\)/);
+    assert.match(res.stdout, /Diff summary \(store vs consolidated copy\):/);
+    assert.match(res.stdout, /- original/);
+    assert.match(res.stdout, /\+ locally edited/);
+    assert.match(
+      res.stdout,
+      /\| <next #> \| new \| `skills\/tracked\/SKILL\.md` \| <patch summary: see diff above> \| <upstream counterpart> \| <verification method> \|/
+    );
+    assert.deepEqual(snapshot(d.repo), repoBefore);
+    assert.deepEqual(snapshot(d.store), storeBefore);
   } finally {
     rmSync(d.root, { recursive: true, force: true });
   }
