@@ -1,8 +1,9 @@
 // Fixture-based tests for scripts/consolidate-strays.mjs (T1: dry-run
-// classification report). Offline and deterministic: fake store, fake pi
-// junction farm, fake lock file, fake repo layout in temp directories.
-// Asserts external behavior (classification, report output, untouched files)
-// via the Node built-in test runner — the repo gains no dependency.
+// classification report; T2: explicit apply). Offline and deterministic: fake
+// store, fake pi junction farm, fake lock file, fake repo layout in temp
+// directories. Asserts external behavior (classification, report output,
+// copied files, untouched store, idempotent re-runs) via the Node built-in
+// test runner — the repo gains no dependency.
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -22,6 +23,7 @@ import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import {
+  applyStray,
   consolidate,
   directoriesEqual,
   scanSkillDirectories,
@@ -311,3 +313,334 @@ test("dry-run mode writes or modifies nothing in the store, farm, lock, or repo"
     rmSync(d.root, { recursive: true, force: true });
   }
 });
+
+// --- apply ------------------------------------------------------------------
+
+test("apply copies a new stray into the unattributed home by default", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, { "brand-new/SKILL.md": "new skill" });
+    writeLock(d.lock, {});
+
+    const result = applyStray({
+      store: d.store,
+      pi: d.pi,
+      lock: d.lock,
+      repo: d.repo,
+      name: "brand-new",
+    });
+    assert.equal(result.applied, true);
+    assert.equal(result.kind, "new-stray");
+    assert.equal(result.destination, "skills/other/brand-new");
+    assert.equal(
+      readFileSync(join(d.repo, "skills", "other", "brand-new", "SKILL.md"), "utf8"),
+      "new skill"
+    );
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("apply with the self-authored target copies into the self-authored home", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, { "my-skill/SKILL.md": "mine" });
+    writeLock(d.lock, {});
+
+    const result = applyStray({
+      store: d.store,
+      pi: d.pi,
+      lock: d.lock,
+      repo: d.repo,
+      name: "my-skill",
+      home: "self",
+    });
+    assert.equal(result.applied, true);
+    assert.equal(result.destination, "skills/self/my-skill");
+    assert.equal(
+      readFileSync(join(d.repo, "skills", "self", "my-skill", "SKILL.md"), "utf8"),
+      "mine"
+    );
+    // nothing landed in the unattributed home
+    assert.equal(existsSync(join(d.repo, "skills", "other", "my-skill")), false);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("apply preserves the nested file structure and leaves the store copy untouched", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, {
+      "brand-new/SKILL.md": "new skill",
+      "brand-new/refs/notes.md": "notes",
+      "brand-new/scripts/a.sh": "echo hi",
+    });
+    writeLock(d.lock, {});
+    const storeBefore = snapshot(d.store);
+
+    applyStray({
+      store: d.store,
+      pi: d.pi,
+      lock: d.lock,
+      repo: d.repo,
+      name: "brand-new",
+    });
+
+    const copied = join(d.repo, "skills", "other", "brand-new");
+    for (const f of ["SKILL.md", "refs/notes.md", "scripts/a.sh"]) {
+      assert.equal(
+        readFileSync(join(copied, f), "utf8"),
+        readFileSync(join(d.store, "brand-new", f), "utf8")
+      );
+    }
+    assert.deepEqual(snapshot(d.store), storeBefore);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("applying twice is a no-op on the second run and produces no duplicates", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, {
+      "brand-new/SKILL.md": "new skill",
+      "brand-new/refs/notes.md": "n",
+    });
+    writeLock(d.lock, {});
+
+    const first = applyStray({
+      store: d.store,
+      pi: d.pi,
+      lock: d.lock,
+      repo: d.repo,
+      name: "brand-new",
+    });
+    assert.equal(first.applied, true);
+    const repoAfterFirst = snapshot(d.repo);
+
+    const second = applyStray({
+      store: d.store,
+      pi: d.pi,
+      lock: d.lock,
+      repo: d.repo,
+      name: "brand-new",
+    });
+    assert.equal(second.applied, false);
+    assert.equal(second.kind, "current");
+    assert.equal(second.destination, "skills/other/brand-new");
+    assert.deepEqual(snapshot(d.repo), repoAfterFirst);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("apply of a skill already consolidated in the repo is a no-op", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, { "brand-new/SKILL.md": "content" });
+    makeTree(d.repo, { "skills/other/brand-new/SKILL.md": "content" });
+    writeLock(d.lock, {});
+    const repoBefore = snapshot(d.repo);
+
+    const result = applyStray({
+      store: d.store,
+      pi: d.pi,
+      lock: d.lock,
+      repo: d.repo,
+      name: "brand-new",
+    });
+    assert.equal(result.applied, false);
+    assert.equal(result.kind, "current");
+    assert.equal(result.destination, "skills/other/brand-new");
+    assert.deepEqual(snapshot(d.repo), repoBefore);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("apply refuses a modified stray and touches neither the consolidated copy nor the store", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, { "tracked/SKILL.md": "locally edited" });
+    makeTree(d.repo, { "skills/tracked/SKILL.md": "original" });
+    writeLock(d.lock, { tracked: { skillPath: "skills/tracked/SKILL.md" } });
+    const repoBefore = snapshot(d.repo);
+    const storeBefore = snapshot(d.store);
+
+    assert.throws(
+      () =>
+        applyStray({
+          store: d.store,
+          pi: d.pi,
+          lock: d.lock,
+          repo: d.repo,
+          name: "tracked",
+        }),
+      /modified stray/
+    );
+    assert.deepEqual(snapshot(d.repo), repoBefore);
+    assert.deepEqual(snapshot(d.store), storeBefore);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("apply copies a stray written directly into the pi junction farm", () => {
+  const d = fixture();
+  try {
+    makeTree(d.pi, { "farm-stray/SKILL.md": "written into the farm" });
+    writeLock(d.lock, {});
+
+    const result = applyStray({
+      store: d.store,
+      pi: d.pi,
+      lock: d.lock,
+      repo: d.repo,
+      name: "farm-stray",
+    });
+    assert.equal(result.applied, true);
+    assert.equal(
+      readFileSync(join(d.repo, "skills", "other", "farm-stray", "SKILL.md"), "utf8"),
+      "written into the farm"
+    );
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("apply with an unknown skill name or an invalid home errors", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, { "brand-new/SKILL.md": "x" });
+    writeLock(d.lock, {});
+    assert.throws(
+      () => applyStray({ store: d.store, pi: d.pi, lock: d.lock, repo: d.repo, name: "nope" }),
+      /no skill named "nope"/
+    );
+    assert.throws(
+      () =>
+        applyStray({
+          store: d.store,
+          pi: d.pi,
+          lock: d.lock,
+          repo: d.repo,
+          name: "brand-new",
+          home: "vendor",
+        }),
+      /invalid home "vendor"/
+    );
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("CLI apply copies a new stray and a second run is a no-op", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, { "brand-new/SKILL.md": "new skill" });
+    writeLock(d.lock, {});
+    const args = [
+      SCRIPT,
+      "--store", d.store,
+      "--pi", d.pi,
+      "--lock", d.lock,
+      "--repo", d.repo,
+      "--apply", "brand-new",
+    ];
+
+    const first = spawnSync(process.execPath, args, { encoding: "utf8" });
+    assert.equal(first.status, 0);
+    assert.match(first.stdout, /Applied new stray/);
+    assert.match(first.stdout, /brand-new \(new-stray\) -> skills\/other\/brand-new/);
+    assert.match(first.stdout, /Store copy left in place; pi keeps serving the skill/);
+    assert.equal(
+      readFileSync(join(d.repo, "skills", "other", "brand-new", "SKILL.md"), "utf8"),
+      "new skill"
+    );
+
+    const repoAfterFirst = snapshot(d.repo);
+    const second = spawnSync(process.execPath, args, { encoding: "utf8" });
+    assert.equal(second.status, 0);
+    assert.match(second.stdout, /nothing to apply/);
+    assert.deepEqual(snapshot(d.repo), repoAfterFirst);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("CLI apply with --to self copies into the self-authored home", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, { "my-skill/SKILL.md": "mine" });
+    writeLock(d.lock, {});
+
+    const res = spawnSync(
+      process.execPath,
+      [
+        SCRIPT,
+        "--store", d.store,
+        "--pi", d.pi,
+        "--lock", d.lock,
+        "--repo", d.repo,
+        "--apply", "my-skill",
+        "--to", "self",
+      ],
+      { encoding: "utf8" }
+    );
+    assert.equal(res.status, 0);
+    assert.match(res.stdout, /my-skill \(new-stray\) -> skills\/self\/my-skill/);
+    assert.equal(
+      readFileSync(join(d.repo, "skills", "self", "my-skill", "SKILL.md"), "utf8"),
+      "mine"
+    );
+    assert.equal(existsSync(join(d.repo, "skills", "other", "my-skill")), false);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("CLI apply errors on a modified stray and on an invalid --to value", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, { "tracked/SKILL.md": "locally edited" });
+    makeTree(d.repo, { "skills/tracked/SKILL.md": "original" });
+    writeLock(d.lock, { tracked: { skillPath: "skills/tracked/SKILL.md" } });
+    const repoBefore = snapshot(d.repo);
+
+    const modified = spawnSync(
+      process.execPath,
+      [
+        SCRIPT,
+        "--store", d.store,
+        "--pi", d.pi,
+        "--lock", d.lock,
+        "--repo", d.repo,
+        "--apply", "tracked",
+      ],
+      { encoding: "utf8" }
+    );
+    assert.equal(modified.status, 1);
+    assert.match(modified.stderr, /modified stray/);
+    assert.deepEqual(snapshot(d.repo), repoBefore);
+
+    const badTo = spawnSync(
+      process.execPath,
+      [
+        SCRIPT,
+        "--store", d.store,
+        "--pi", d.pi,
+        "--lock", d.lock,
+        "--repo", d.repo,
+        "--apply", "tracked",
+        "--to", "vendor",
+      ],
+      { encoding: "utf8" }
+    );
+    assert.equal(badTo.status, 1);
+    assert.match(badTo.stderr, /invalid --to value "vendor"/);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+

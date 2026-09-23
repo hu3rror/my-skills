@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// consolidate-strays.mjs — dry-run classification report for the canonical
+// consolidate-strays.mjs — classification and recovery for the canonical
 // skills store against the distribution chain's lock file and the aggregation
-// repo's consolidated copies (T1 of the stray-skill consolidation spec, #9).
+// repo's consolidated copies (stray-skill consolidation spec, #9: T1
+// classification report, T2 explicit apply).
 //
 // Every skill found in the store (and any real, non-junction directory in the
 // pi junction farm) is classified as one of:
@@ -13,15 +14,19 @@
 //   - current:         content matches its consolidated copy.
 //
 // Junction entries in ~/.pi/agent/skills are distribution artifacts, never
-// strays, and are skipped. The mode is dry-run by design: nothing is written
-// or modified (copying strays into the repo is a separate explicit action,
-// T2). All roots are parameterized with home-derived defaults so fixtures
-// drive the same logic offline. Zero dependencies; runs under PowerShell and
-// in WSL alike.
+// strays, and are skipped. The default mode is dry-run: nothing is written or
+// modified. An explicit --apply <name> copies that new stray into the repo —
+// skills/other/<name> by default (provenance unknown), skills/self/<name> with
+// --to self. The store copy stays in place; running apply again is a no-op.
+// Modified strays are report-only: apply never copies one (their recovery is
+// T3). All roots are parameterized with home-derived defaults so fixtures drive
+// the same logic offline. Zero dependencies; runs under PowerShell and in WSL.
 
 import {
+  copyFileSync,
   existsSync,
   lstatSync,
+  mkdirSync,
   readFileSync,
   readdirSync,
 } from "node:fs";
@@ -156,9 +161,62 @@ export function classifyStrays(skills, lock, repoRoot) {
     );
     const same = existsSync(repoCopy) && directoriesEqual(skill.dir, repoCopy);
     return same
-      ? { ...skill, kind: "current" }
+      ? { ...skill, kind: "current", destination }
       : { ...skill, kind: "modified-stray", destination };
   });
+}
+
+// Scan both roots and classify every skill against the lock and the repo.
+// Shared by the dry-run report and apply so the two actions cannot drift.
+function classify({ store, pi, lock, repo }) {
+  const lockData = loadLock(lock);
+  const skills = [...scanSkillDirectories(store), ...scanSkillDirectories(pi)];
+  return classifyStrays(skills, lockData, repo);
+}
+
+// --- apply ------------------------------------------------------------------
+
+// Copy the contents of a source tree into a destination, preserving the
+// relative layout. Symbolic links are not content (matching directoriesEqual)
+// and are skipped. Files are written in place, so copying into a destination
+// that already exists (an empty or partial directory) converges to the same
+// tree instead of duplicating. Idempotency of the apply action itself comes
+// from re-classification, which short-circuits before this ever runs.
+function copyTree(src, dest) {
+  mkdirSync(dest, { recursive: true });
+  for (const file of listFiles(src)) {
+    const out = join(dest, relative(src, file));
+    mkdirSync(dirname(out), { recursive: true });
+    copyFileSync(file, out);
+  }
+}
+
+// Explicitly copy one new stray into the aggregation repo: skills/other/<name>
+// by default while provenance is unknown, skills/self/<name> when home is
+// "self". Classification runs fresh from the same inputs, so the action is
+// idempotent: a skill already consolidated (current) is a no-op, and a
+// modified stray is never copied (its recovery is report-only, T3). The store
+// copy is left in place. Returns { applied, name, kind, destination }.
+export function applyStray({ store, pi, lock, repo, name, home = "other" }) {
+  if (home !== "self" && home !== "other") {
+    throw new Error(`invalid home "${home}" (expected "self" or "other")`);
+  }
+  const classified = classify({ store, pi, lock, repo });
+  const skill = classified.find((c) => c.name === name);
+  if (skill === undefined) {
+    throw new Error(`no skill named "${name}" in the store or pi farm`);
+  }
+  if (skill.kind === "modified-stray") {
+    throw new Error(
+      `"${name}" is a modified stray; apply only copies new strays, and modified-stray recovery is report-only until its patch-manifest row exists`
+    );
+  }
+  const destination = toPortable(join("skills", home, name));
+  if (skill.kind === "current") {
+    return { applied: false, name, kind: "current", destination: skill.destination };
+  }
+  copyTree(skill.dir, join(repo, "skills", home, name));
+  return { applied: true, name, kind: "new-stray", destination };
 }
 
 // --- report ---------------------------------------------------------------
@@ -197,9 +255,7 @@ export function buildReport({ store, pi, lock, repo, classified }) {
 // --- runner ---------------------------------------------------------------
 
 export function consolidate({ store, pi, lock, repo }) {
-  const lockData = loadLock(lock);
-  const skills = [...scanSkillDirectories(store), ...scanSkillDirectories(pi)];
-  const classified = classifyStrays(skills, lockData, repo);
+  const classified = classify({ store, pi, lock, repo });
   return { classified, report: buildReport({ store, pi, lock, repo, classified }) };
 }
 
@@ -227,6 +283,26 @@ export function main(argv = process.argv.slice(2)) {
     return;
   }
   try {
+    if (args.apply !== undefined) {
+      const result = applyStray({
+        store: args.store,
+        pi: args.pi,
+        lock: args.lock,
+        repo: args.repo,
+        name: args.apply,
+        home: args.to,
+      });
+      if (result.applied) {
+        console.log(
+          `Applied new stray:\n  ${result.name} (${result.kind}) -> ${result.destination}\nStore copy left in place; pi keeps serving the skill.`
+        );
+      } else {
+        console.log(
+          `${result.name} (${result.kind}) is already consolidated at ${result.destination}; nothing to apply.`
+        );
+      }
+      return;
+    }
     const { classified, report } = consolidate(args);
     console.log(report);
     // Non-zero when strays exist, so callers and CI can key on the result.
@@ -243,6 +319,7 @@ function parseArgs(argv) {
     pi: defaultPi(),
     lock: defaultLock(),
     repo: DEFAULT_REPO,
+    to: "other",
   };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
@@ -253,8 +330,16 @@ function parseArgs(argv) {
     else if (flag === "--pi") args.pi = value;
     else if (flag === "--lock") args.lock = value;
     else if (flag === "--repo") args.repo = value;
+    else if (flag === "--apply") args.apply = value;
+    else if (flag === "--to") args.to = value;
     else throw new Error(`unknown option: ${flag}`);
     i++;
+  }
+  if (args.to !== "self" && args.to !== "other") {
+    throw new Error(`invalid --to value "${args.to}" (expected "self" or "other")`);
+  }
+  if (args.apply === undefined && args.to !== "other") {
+    throw new Error("--to requires --apply");
   }
   return args;
 }
@@ -262,18 +347,21 @@ function parseArgs(argv) {
 function usage() {
   return `Usage: node scripts/consolidate-strays.mjs [options]
 
-Dry-run classification report (read-only; nothing is written or modified).
-Every store skill is reported as a new stray, a modified stray, or current,
-with the proposed destination for strays.
+Classifies every store skill as a new stray, a modified stray, or current and
+prints a dry-run report (read-only; nothing is written or modified). With
+--apply, copies one new stray into the repo instead.
 
 Options:
   --store <dir>   canonical skills store (default: ~/.agents/skills)
   --pi <dir>      pi junction farm (default: ~/.pi/agent/skills)
   --lock <file>   distribution lock file (default: ~/.agents/.skill-lock.json)
   --repo <dir>    aggregation repo root (default: this script's parent)
+  --apply <name>  copy the named new stray into the repo (idempotent)
+  --to <home>     destination home with --apply: other (default) or self
   -h, --help      show this help
 
-Exit codes: 0 = no strays, 2 = strays found, 1 = error.`;
+Exit codes: 0 = no strays (or applied/no-op), 2 = strays found in dry-run,
+1 = error.`;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
