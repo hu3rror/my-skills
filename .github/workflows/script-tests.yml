@@ -1,0 +1,27 @@
+# Script tests: runs the repo's node:test fixture suite on every push. The
+# scripts have no other guardrail — this job is the point. Command spelled as
+# a shell-expanded glob, not `node --test scripts/`: the directory argument is
+# broken on the CI Node 22 line (treated as a module require), while the glob
+# works on 22 and 26 alike.
+name: script-tests
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Run script tests
+        run: node --test scripts/*.test.mjs
