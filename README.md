@@ -16,7 +16,7 @@ the skill files, fork-style).
 | `skills/mattpocock/{engineering,productivity,in-progress}/<name>/` | [mattpocock/skills](https://github.com/mattpocock/skills) | 23 skills, keeping the upstream `engineering` / `productivity` / `in-progress` categories |
 | `skills/kill-ai-slop/<name>/` | [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop) | kill-ai-slop (upstream path is `skill/`; normalized to the source dir here) |
 | `skills/cloudflare/<name>/` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | security-audit (provenance traced; recorded in the local `~/.agents/.skill-lock.json`) |
-| `skills/self/<name>/` | self-authored | de-slop, web-debug (general-purpose; de-slop carries `disable-model-invocation: true`, explicit invocation only); npm-release, pi-extension-sync (pi-specific, `disable-model-invocation: true`, so other harnesses never auto-trigger) |
+| `skills/self/<name>/` | self-authored | de-slop, web-debug, consolidate-strays (general-purpose; de-slop carries `disable-model-invocation: true`, explicit invocation only; consolidate-strays is model-invoked — its description is scoped to stray-consolidation requests and its default run is a read-only dry-run, so other harnesses never fire it spuriously); npm-release, pi-extension-sync (pi-specific, `disable-model-invocation: true`, so other harnesses never auto-trigger) |
 
 **Discovery depth rule**: the `vercel-labs/skills` CLI discovery constrains only
 the depth of skill directories (dirs containing `SKILL.md`): at most three

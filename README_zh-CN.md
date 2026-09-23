@@ -11,7 +11,7 @@
 | `skills/mattpocock/{engineering,productivity,in-progress}/<name>/` | [mattpocock/skills](https://github.com/mattpocock/skills) | 23 个技能，保留上游 `engineering` / `productivity` / `in-progress` 分类 |
 | `skills/kill-ai-slop/<name>/` | [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop) | kill-ai-slop（上游路径为 `skill/`，聚合后归一为来源目录） |
 | `skills/cloudflare/<name>/` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | security-audit（来源已溯源，记录于本机 `~/.agents/.skill-lock.json`） |
-| `skills/self/<name>/` | 自建 | de-slop、web-debug（通用；de-slop 带 `disable-model-invocation: true`，仅显式调用）；npm-release、pi-extension-sync（pi 专属，带 `disable-model-invocation: true`，避免其他 harness 自动触发） |
+| `skills/self/<name>/` | 自建 | de-slop、web-debug、consolidate-strays（通用；de-slop 带 `disable-model-invocation: true`，仅显式调用；consolidate-strays 为模型调用——description 限定在 stray 回收请求，且默认跑只读 dry-run，避免其他 harness 误触发）；npm-release、pi-extension-sync（pi 专属，带 `disable-model-invocation: true`，避免其他 harness 自动触发） |
 
 **发现深度约束**：`vercel-labs/skills` CLI 的发现规则只约束**技能目录**（含 `SKILL.md` 的目录）的深度——`skills/` 容器下最多三层（`skills/<cat>/<cat>/<name>/`）。本仓库技能目录最深为 `skills/mattpocock/<category>/<name>/`，在规则之内；技能目录内部的辅助文件（`agents/`、`references/`、`scripts/`）不受此限，可再往下嵌套。
 
