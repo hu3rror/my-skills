@@ -17,6 +17,8 @@ Infer the repo from `git remote -v`; `gh` does this automatically when run insid
 
 Attach the verification report in a **single write** — `gh issue close <number> --comment "<AC-by-AC report>"` — instead of `comment` then `close`. One write halves the exposure window when the network is flaky (next section) and never leaves an orphaned report comment behind.
 
+Before closing, `git status --porcelain` must be empty and **untracked files (`??`) count as dirty** — run probes/experiments under `$TEMP`, never the repo root.
+
 ## GitHub write hiccups
 
 Local `gh` writes (comment / close / edit) intermittently fail with `unexpected EOF` on the GraphQL POST while GETs stay healthy and no proxy is configured. That signature is transient network jitter, not a config problem — it self-heals in minutes, so work through it in this order instead of re-deriving a fix:
