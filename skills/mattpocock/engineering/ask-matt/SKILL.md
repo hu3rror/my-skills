@@ -87,4 +87,4 @@ Off the main flow entirely.
 
 ## Precondition
 
-**`/setup-matt-pocock-skills`**: run before your first engineering flow to configure the issue tracker, triage labels, and doc layout the other skills assume. Custom issue trackers also work.
+**`/setup-repo`**: run before your first engineering flow to configure the issue tracker, triage labels, doc layout, and coding standards the other skills assume — it drives `/setup-matt-pocock-skills` then `/setup-coding-standards`, with your standard answers pre-filled; the primitives stay available when you want only part of the setup. Custom issue trackers also work.
