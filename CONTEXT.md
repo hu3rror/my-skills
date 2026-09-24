@@ -36,6 +36,12 @@ _Avoid_: source (too generic)
 A skill owned by this user's pi workflows (`npm-release`, `pi-extension-sync`); lives under `skills/self/` and must keep `disable-model-invocation: true` so other harnesses sharing the canonical store never auto-trigger it.
 _Avoid_: pi skill (drops the other-harness visibility consequence)
 
+## Skill flows
+
+**Repo setup** (仓库级 setup):
+The single-run entry that makes a repo usable by the engineering skills, composed as one thin orchestrator (`skills/self/setup-repo`, `disable-model-invocation: true`) driving two setup primitives back-to-back: `setup-matt-pocock-skills` (issue tracker, triage labels, domain docs — with the maintainer's standard answers pre-filled: GitHub, default triage labels, the existing AGENTS/CLAUDE file) and then `setup-coding-standards` (`CODING_STANDARDS.md`). The composite delegates, never copies content — each primitive keeps its own single home, so upstream drift in a vendored primitive flows through automatically.
+_Avoid_: setup flow (generic), repo configuration (ambiguous with config files)
+
 ## Update detection
 
 **Vendor freshness check**:
