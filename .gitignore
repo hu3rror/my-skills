@@ -1,0 +1,7 @@
+# OS metadata — keep `git status --porcelain` clean for the issue-tracker close
+# check (docs/agents/issue-tracker.md).
+.DS_Store
+Thumbs.db
+
+# Logs and scratch output
+*.log

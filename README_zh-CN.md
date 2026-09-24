@@ -17,7 +17,7 @@
 
 ## 基线导入
 
-仓库以本机 `~/.agents/skills` 当前快照**逐字节导入**（105 个文件），因而天然携带快照里已有的 4 处基线补丁。相对上游的全部差异（4 基线补丁 + 4 新增补丁 + 4 条 B 类环境备忘）记录在根目录 [`PATCHES.md`](PATCHES.md)（`self/` 为自建技能，无上游）；上游来源技能已逐文件校验。基线 4 处为：
+仓库以本机 `~/.agents/skills` 当前快照**逐字节导入**（105 个文件），因而天然携带快照里已有的 4 处基线补丁。相对上游的全部差异（基线补丁与新增 A 类补丁，以及 B 类环境备忘）记录在根目录 [`PATCHES.md`](PATCHES.md)（`self/` 为自建技能，无上游）；上游来源技能已逐文件校验。基线 4 处为：
 
 - `research/SKILL.md`：pi 后台 research agent 完成即推送的机制说明（+2 行）
 - `wayfinder/SKILL.md`：research 子代理完成推送的处理方式（+1 行）
@@ -69,7 +69,7 @@ node scripts/consolidate-strays.mjs --apply <name> [--to self]  # 把某个 new 
 ## 约定
 
 - 每个技能一个目录，内含 `SKILL.md`（目录 + SKILL.md，兼容所有支持该规范的 harness）
-- 脚本使用相对 skill 目录的路径，不写死 `~/.pi` 等具体 harness 路径
+- 脚本使用相对 skill 目录的路径，不写死 `~/.pi` 等具体 harness 路径；分发技能正文不得出现机器专属路径（由 `scripts/skill-hygiene.test.mjs` 强制）
 - pi 专属技能放 `skills/self/`，必须保留 `disable-model-invocation: true`
 - 技能目录（含 `SKILL.md` 的目录）深度不得超过 `skills/<cat>/<cat>/<name>/`（CLI 发现规则上限）；目录内的辅助文件不受此限
 

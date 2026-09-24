@@ -29,10 +29,11 @@ not depth-limited.
 
 The repo was imported byte-for-byte (105 files) from the current
 `~/.agents/skills` snapshot, so it carries the 4 baseline patches the snapshot
-already had. Every deviation from upstream (4 baseline patches + 4 new patches
-+ 4 B-class environment notes) is recorded in [`PATCHES.md`](PATCHES.md) at the
-repo root (`self/` skills are self-authored and have no upstream); upstream
-sourced files were verified file-by-file. The baseline patches:
+already had. Every deviation from upstream — the baseline and new A-class
+patches plus the B-class environment notes — is recorded in
+[`PATCHES.md`](PATCHES.md) at the repo root (`self/` skills are self-authored and
+have no upstream); upstream sourced files were verified file-by-file. The
+baseline patches:
 
 - `research/SKILL.md`: pi's background research agent pushes its completion
   findings instead of being polled (+2 lines)
@@ -118,7 +119,8 @@ place; recovered edits go live only after commit + push + a distribution run.
 - One directory per skill, containing `SKILL.md` (directory + SKILL.md works
   with every harness that supports the spec)
 - Scripts use paths relative to the skill directory, never hardcode harness
-  paths like `~/.pi`
+  paths like `~/.pi`; distributed skills carry no machine-specific paths
+  (enforced by `scripts/skill-hygiene.test.mjs`)
 - pi-specific skills live in `skills/self/` and must keep
   `disable-model-invocation: true`
 - Skill directories (containing `SKILL.md`) go at most

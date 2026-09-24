@@ -1,6 +1,6 @@
 # Spec: PowerShell Portability & Low-Cost Maintenance for Shared Skills
 
-> Status: ready-for-agent
+> Status: implemented
 > Scope: `hu3rror/my-skills` aggregation repo + `~/.pi` Windows-side config
 
 ## Problem Statement
@@ -24,7 +24,7 @@ scan passes) is currently a one-off cost with nothing persisted.
 ## Solution
 
 Consolidate every shared skill into the self-owned aggregation repository
-`hu3rror/my-skills` (local checkout `~/Repos/my-skills`), organized by upstream
+`hu3rror/my-skills`, organized by upstream
 source into folders, imported from the current `~/.agents/skills` snapshot (which
 already contains 4 deliberate local patches), fix the PowerShell conflicts in
 the consolidated copies, record every patch in a `PATCHES.md` manifest, and add
