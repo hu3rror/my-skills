@@ -14,7 +14,7 @@ Consolidation is non-destructive: the store copy stays in place, and a recovered
 
 ## 1. Run the dry-run report
 
-Locate the aggregation repo — the git repo owning `scripts/consolidate-strays.mjs` (on this machine `C:/Users/Hue/Repos/my-skills`, reachable from WSL through its `/mnt/c` mount; ask the user if it has moved). From the repo root, run the script plain — it resolves the store, the pi junction farm, the lock file, and the repo root itself, so no flags are needed:
+Locate the aggregation repo — the git repo owning `scripts/consolidate-strays.mjs`. If you are not already at its root, find it (e.g. `git -C <candidate> rev-parse --show-toplevel`, or search your usual checkout roots); ask the user if it has moved. From the repo root, run the script plain — it resolves the store, the pi junction farm, the lock file, and the repo root itself, so no flags are needed:
 
 ```
 node scripts/consolidate-strays.mjs
