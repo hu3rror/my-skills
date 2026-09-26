@@ -1,5 +1,5 @@
 ---
-name: vendor-sync
+name: my-skills-vendor-sync
 description: "Vendor-sync maintenance for the my-skills aggregation repo: resolve pending updates — sync, three-way-merge patched files, bump the PATCHES.md pins, verify the copies are current, propose commit/push/issue-close."
 disable-model-invocation: true
 ---

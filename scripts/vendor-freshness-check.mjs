@@ -172,7 +172,7 @@ function buildBody(s) {
   }
   lines.push("## What to do");
   lines.push("");
-  lines.push("1. Fast path: invoke the `vendor-sync` skill (`/vendor-sync`) to drive this whole list");
+  lines.push("1. Fast path: invoke the `my-skills-vendor-sync` skill (`/my-skills-vendor-sync`) to drive this whole list");
   lines.push("2. Preview: `node scripts/vendor-sync.mjs --dry-run`");
   lines.push("3. Sync: `node scripts/vendor-sync.mjs`, then review the diff");
   lines.push("4. Patched files are never overwritten by sync — merge them manually");
