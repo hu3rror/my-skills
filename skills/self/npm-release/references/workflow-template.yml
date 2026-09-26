@@ -53,8 +53,9 @@ jobs:
 
       # 可选(仅模式 B):建一个占位 Release,避免 tag push 后完全没有 Release 页面。
       # 只生成 "Full Changelog: vX...vY" 一行比较链接,信息量很低——真正分类
-      # 整理过的发布说明由 agent 在 SKILL.md 步骤 7 用 `gh release edit` 覆盖,
-      # 见 references/release-notes-guide.md。
+      # 整理过的发布说明由 agent 在 SKILL.md 步骤 7 按 write-release-notes skill
+      # 撰写后用 `gh release edit` 覆盖,见
+      # ../write-release-notes/references/release-notes-guide.md。
       # 模式 A 下这一步此时对应的版本还只是"暂存",尚未经维护者 approve 真正
       # 发布,不要在这里建 Release——整段删除,改成步骤 7 里 approve 之后由
       # agent 手动 `gh release create`。

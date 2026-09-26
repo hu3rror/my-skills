@@ -72,14 +72,7 @@ npm 发布链路里有几步一旦执行就不可逆(`git push --tags`、`npm pu
 
 ### 7. 发布说明(Release Notes)
 **完成判据**:GitHub Release 里有分类整理过的说明,而不只是 `gh release create --generate-notes` 生成的 `Full Changelog: vX...vY` 一行比较链接。
-**先问仓库约定**:不少仓库只是 tag + npm 暂存、**从不建 GitHub Release**(`gh release list` 为空或历史版本无 release)——这种仓库按约定跳过本步骤,不要自作主张建 release;只有用户确认要 release(或仓库已有惯例)才执行下面流程。
-`--generate-notes` 只是"有没有发布说明"的兜底,不是"发布说明写得够不够好"——它不理解变更的语义,只会拼 PR 标题或 commit 列表。这一步需要 agent 自己读一遍改动、按用户能看懂的方式分类总结:
-1. `git log <上一个 tag>..HEAD --oneline` 拿到本次改动的提交列表;仓库用 PR 合并的话再 `gh pr list --state merged --search "merged:>=<上次发布日期>"` 补充 PR 描述作为素材。
-2. 按 [references/release-notes-guide.md](references/release-notes-guide.md) 的模板分类整理(Features / Fixes / Docs-Chore / Breaking Changes),每条都写清"对用户来说变了什么",不要直接堆 commit 标题。
-3. 写成本地文件(如 `$env:TEMP\release-notes-vX.Y.Z.md`),`gh release view vX.Y.Z` 看看步骤 6 的 workflow 有没有已经建了 release:
-   - 没有 → `gh release create vX.Y.Z --title vX.Y.Z --notes-file "$env:TEMP\release-notes-vX.Y.Z.md"`
-   - 已有(如 workflow 里带了兜底的 `--generate-notes` 步骤)→ `gh release edit vX.Y.Z --notes-file "$env:TEMP\release-notes-vX.Y.Z.md"`
-4. `gh release view vX.Y.Z` 确认发布说明已经是整理过的版本,不是原始的 compare 链接。
+按 [write-release-notes](../write-release-notes/SKILL.md) skill 写发布说明:素材、分类模板、create/edit、验证都在那里,版本号直接用步骤 6 bump 出的 vX.Y.Z。npm 差异就一条:**不少 npm 仓库只是 tag + 暂存、从不建 GitHub Release**——跳过与否按 write-release-notes 步骤 1 的仓库约定检查执行。
 
 ### 8. 沉淀
 **完成判据**:AGENTS.md 发布约定与相关文档已同步。

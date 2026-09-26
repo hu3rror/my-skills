@@ -1,6 +1,6 @@
 # Release Notes 撰写指南
 
-本指南是 SKILL.md 步骤 7 的分类写法参考:素材怎么找、分类模板、以及"只有 Full Changelog 一行"这种反模式要怎么避免。
+本指南是 write-release-notes 步骤 2 的分类写法参考:素材怎么找、分类模板、以及"只有 Full Changelog 一行"这种反模式要怎么避免。
 
 ## 素材来源(按优先级)
 
@@ -27,6 +27,7 @@
 
 ## ⚠️ Breaking Changes
 - 没有破坏性变更就省略这一节;有的话必须写清迁移方法,不能只说"接口变了"
+- 读者是最终用户的软件(桌面/CLI 工具):Breaking 指需要用户行动的变化——系统要求提升、配置文件格式变化、移除的功能;迁移方法写给用户"怎么改",不是写给调用方开发者
 
 ## Full Changelog
 `https://github.com/<owner>/<repo>/compare/v0.5.0...v0.6.0`
