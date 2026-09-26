@@ -68,7 +68,7 @@ node scripts/consolidate-strays.mjs --apply <name> [--to self]  # 把某个 new 
 
 每日 vendor freshness check（`.github/workflows/vendor-freshness-check.yml`，UTC 01:00 定时 + 手动触发）跑 dry-run，把结果变成指派给维护者的单个 `pending-update` issue——上游有未同步内容时开启，副本重新 current 后自动关闭；它从不改文件，真正 sync 仍为手动。
 
-处理 pending update（sync → 对 patched 文件做三方合并 → 更新 pin → 验证 → commit/push/close）由 `skills/self/vendor-sync` 承担（模型调用）：说一句 "resolve the pending update" / "sync vendor skills"，技能驱动全程，最终 commit、push 与关 issue 会先征求你的确认。
+处理 pending update（sync → 对 patched 文件做三方合并 → 更新 pin → 验证 → commit/push/close）由 `skills/self/vendor-sync` 承担（显性调用，`/vendor-sync`）：技能驱动全程，最终 commit、push 与关 issue 会先征求你的确认。
 
 ## 约定
 

@@ -89,9 +89,8 @@ never modifies files; the real sync stays manual.
 
 Resolving a pending update — sync, three-way-merge patched files onto the new
 upstream, bump the pins, verify, commit/push/close — is
-`skills/self/vendor-sync`, model-invoked: say "resolve the pending update" /
-"sync vendor skills" and it drives the whole loop, proposing the commit, push,
-and issue close for your go-ahead.
+`skills/self/vendor-sync`, invoked by name (`/vendor-sync`): it drives the whole
+loop, proposing the commit, push, and issue close for your go-ahead.
 
 ## Consolidate stray skills (before distributing)
 

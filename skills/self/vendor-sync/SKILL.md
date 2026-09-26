@@ -1,6 +1,7 @@
 ---
 name: vendor-sync
-description: "Resolve vendor pending updates in the my-skills aggregation repo: dry-run and run the sync, three-way-merge patched files onto the new upstream base, bump the PATCHES.md pins, verify the copies are current, then propose commit, push, and pending-update issue close. Use when the user says to sync vendor skills, resolve a pending-update issue, merge upstream skill changes, or the vendor freshness check flagged a pending update."
+description: "Vendor-sync maintenance for the my-skills aggregation repo: resolve pending updates — sync, three-way-merge patched files, bump the PATCHES.md pins, verify the copies are current, propose commit/push/issue-close."
+disable-model-invocation: true
 ---
 
 # Vendor-sync maintenance
