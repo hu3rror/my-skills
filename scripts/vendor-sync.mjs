@@ -31,6 +31,7 @@ const SOURCES = [
   {
     name: "mattpocock",
     url: "https://github.com/mattpocock/skills.git",
+    repo: "mattpocock/skills", // key in PATCHES.md's upstream references table
     targetRoot: "skills/mattpocock",
     // Release-tracked upstream: the freshness check fetches its latest
     // release as context (see the per-source releaseRepo in the summary).
@@ -40,6 +41,7 @@ const SOURCES = [
   {
     name: "kill-ai-slop",
     url: "https://github.com/yetone/kill-ai-slop.git",
+    repo: "yetone/kill-ai-slop", // key in PATCHES.md's upstream references table
     targetRoot: "skills/kill-ai-slop/kill-ai-slop",
     skillRoots: fixedSkillRoots([
       { upstream: "skill", target: "skills/kill-ai-slop/kill-ai-slop" },
@@ -48,6 +50,7 @@ const SOURCES = [
   {
     name: "cloudflare",
     url: "https://github.com/cloudflare/security-audit-skill.git",
+    repo: "cloudflare/security-audit-skill", // key in PATCHES.md's upstream references table
     targetRoot: "skills/cloudflare/security-audit",
     skillRoots: fixedSkillRoots([
       {
@@ -58,10 +61,13 @@ const SOURCES = [
   },
 ];
 
-main();
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
+}
 
 function main() {
   const patchedSet = parsePatchedFiles();
+  const pins = parseUpstreamRefs();
   if (patchedSet.size === 0) {
     console.error(
       "PATCHES.md: no A-class patched files found. Refusing to sync — proceeding would risk overwriting local patches.",
@@ -93,7 +99,7 @@ function main() {
 
   for (const source of SOURCES) {
     console.log(`\n=== ${source.name} — ${source.url} ===`);
-    const r = syncSource(source, patchedSet);
+    const r = syncSource(source, patchedSet, pins);
     for (const p of r.added) log("add", p);
     for (const p of r.updated) log("update", p);
     for (const p of r.removed) console.log(`  kept (removed upstream) ${p}`);
@@ -105,7 +111,9 @@ function main() {
 
     // Machine-readable per-source state for the freshness check workflow:
     // pending = a dry run would change files, or a patched file now needs a
-    // manual merge. patched-but-unchanged files are not pending. The patched
+    // manual merge (upstream changed it since the pinned base — not merely
+    // "local differs from upstream", which is true of every patch by
+    // construction). patched-but-current files are not pending. The patched
     // tri-state comes from the same classifier as the human summary above.
     const patchedByStatus = { differs: [], removed: [], unchanged: 0 };
     for (const item of r.patched) {
@@ -187,7 +195,7 @@ function main() {
   process.exit(failed ? 1 : 0);
 }
 
-function syncSource(source, patchedSet) {
+function syncSource(source, patchedSet, pins) {
   const r = {
     added: [],
     updated: [],
@@ -209,6 +217,27 @@ function syncSource(source, patchedSet) {
       return r;
     }
 
+    // Fetch the source's pinned commit (the patched files' diff baseline) so a
+    // patched file can be told "upstream changed it" (manual merge pending)
+    // from "our patch makes it differ" (current). An unfetchable pin
+    // (force-push / GC upstream) falls back to the old local-vs-HEAD test,
+    // which over-reports pending work but never hides a real change.
+    const pin = pins.get(source.repo);
+    let pinAvailable = false;
+    if (pin) {
+      const fetched = spawnSync(
+        "git",
+        ["-C", cloneDir, "fetch", "--depth", "1", "--quiet", "origin", pin],
+        { encoding: "utf8" },
+      );
+      pinAvailable = fetched.status === 0;
+      if (!pinAvailable) {
+        console.error(
+          `  note: pinned commit ${pin} not fetchable for ${source.name} — patched files treated as pending (old semantics)`,
+        );
+      }
+    }
+
     // Enumerate every upstream skill file, mapped to its repo-relative path.
     const managed = new Map(); // repoRelPath -> absolute upstream path
     for (const { upstreamDir, targetRel } of source.skillRoots(cloneDir)) {
@@ -221,7 +250,7 @@ function syncSource(source, patchedSet) {
       if (patchedSet.has(repoRel)) {
         r.patched.push({
           path: repoRel,
-          differs: filesDiffer(upstreamAbs, toAbs(repoRel)),
+          differs: patchedDiffers(cloneDir, upstreamAbs, repoRel, pin, pinAvailable),
           removedUpstream: false,
         });
         continue;
@@ -326,12 +355,82 @@ function parsePatchedFiles() {
   return files;
 }
 
+// Parse PATCHES.md's "Upstream references" table: Source repo -> pinned commit
+// (the diff baseline the A-class rows verify against). Pinned commits let the
+// freshness check distinguish "upstream changed a patched file" (pending) from
+// "our patch makes it differ" (current).
+export function parseUpstreamRefs(text = readFileSync(PATCHES_PATH, "utf8")) {
+  let inRefs = false;
+  const pins = new Map();
+  for (const line of text.split(/\r?\n/)) {
+    if (line.startsWith("## Upstream references")) {
+      inRefs = true;
+      continue;
+    }
+    if (inRefs && line.startsWith("## ")) break;
+    if (!inRefs || !line.startsWith("|")) continue;
+    const cells = line.split("|").map((c) => c.trim().replace(/`/g, ""));
+    // | Source | URL | Pinned commit (diff baseline) |  → cells[1], cells[3]
+    if (cells.length < 4) continue;
+    const repo = cells[1];
+    const pin = cells[3];
+    if (repo && repo !== "Source" && pin && !/^-+$/.test(pin)) {
+      pins.set(repo, pin);
+    }
+  }
+  return pins;
+}
+
+// Does a patched file need a manual merge? Only when upstream changed it since
+// the pinned base (base blob ≠ HEAD blob). The old test — local copy differs
+// from upstream HEAD — was true of every patched file by construction (a patch
+// is a deviation), so the freshness check could never go green and every
+// pending-update issue listed every patched file as "manual merge".
+export function patchedNeedsMerge(baseBlob, headBlob, localDiffers) {
+  if (baseBlob === null || headBlob === null) return localDiffers;
+  // Buffers from spawnSync are raw bytes; strings (tests, fixtures) normalize
+  // through Buffer.from — either way the comparison is byte-exact, never
+  // decoded, so two different invalid-UTF-8 sequences can't compare equal.
+  return !Buffer.from(baseBlob).equals(Buffer.from(headBlob));
+}
+
 // One tri-state classification shared by the human summary and the machine
 // summary so the two can never disagree about a patched file.
 function patchedStatus(item) {
   if (item.removedUpstream) return "removed";
   if (item.differs) return "differs";
   return "unchanged";
+}
+
+// Per-file "did upstream move this patched file since the pinned base?".
+// Compares blobs (raw bytes, LF-normalized) so checkout line-ending
+// translation in the clone cannot cause false pending reports.
+function patchedDiffers(cloneDir, upstreamAbs, repoRel, pin, pinAvailable) {
+  if (!pinAvailable || !pin) return filesDifferBlob(cloneDir, upstreamAbs, repoRel);
+  const rel = relative(cloneDir, upstreamAbs).split(sep).join("/");
+  const base = spawnSync("git", ["-C", cloneDir, "cat-file", "blob", `${pin}:${rel}`]);
+  if (base.status !== 0) return filesDifferBlob(cloneDir, upstreamAbs, repoRel);
+  const head = spawnSync("git", ["-C", cloneDir, "cat-file", "blob", `HEAD:${rel}`]);
+  if (head.status !== 0) return filesDifferBlob(cloneDir, upstreamAbs, repoRel);
+  // Both blobs are present here, so `localDiffers` never participates in the
+  // verdict — pass false instead of re-running a comparison the classifier
+  // ignores.
+  return patchedNeedsMerge(base.stdout, head.stdout, false);
+}
+
+// Fallback when the pin is missing or unfetchable: the HEAD blob
+// (LF-normalized) vs the local copy. Comparing working-tree files here would
+// let the clone's checkout line-ending translation (an upstream .gitattributes)
+// report every patched file as differing on Windows clones — the same false
+// alarm the blob comparison exists to avoid.
+function filesDifferBlob(cloneDir, upstreamAbs, repoRel) {
+  const rel = relative(cloneDir, upstreamAbs).split(sep).join("/");
+  const head = spawnSync("git", ["-C", cloneDir, "cat-file", "blob", `HEAD:${rel}`]);
+  if (head.status !== 0) return filesDiffer(upstreamAbs, toAbs(repoRel));
+  // Byte-exact: raw blob bytes vs the raw local file. Decoded-string compares
+  // would treat two different invalid-UTF-8 sequences as equal and could hide
+  // a real upstream change.
+  return !head.stdout.equals(readFileSync(toAbs(repoRel)));
 }
 
 function filesDiffer(a, b) {

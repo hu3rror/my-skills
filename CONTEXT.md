@@ -69,7 +69,7 @@ _Avoid_: write-back, sync back (imply a copy direction the store does not own)
 ## Patches
 
 **Patch manifest**:
-`PATCHES.md`, the record of every deviation from upstream (file, patch summary, upstream counterpart, verification method). The sync script skips listed files and reports them as manual-merge required.
+`PATCHES.md`, the record of every deviation from upstream (file, patch summary, upstream counterpart, verification method). The sync script skips listed files and reports them as manual-merge required only when upstream changed them since the pinned commit.
 _Avoid_: patch list, changelog
 
 **Snapshot import**:

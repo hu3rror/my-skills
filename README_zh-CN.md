@@ -48,7 +48,7 @@ node scripts/vendor-sync.mjs --dry-run
 node scripts/vendor-sync.mjs
 ```
 
-补丁文件（`PATCHES.md` A 类）永不被覆盖，会报告为需要手动合并；上游删除的文件只报告、不删除，由维护者手动 `git rm`。GitHub Actions 提供同名 `vendor-sync` 手动工作流（`workflow_dispatch`，无定时），在日志中输出脚本摘要。
+补丁文件（`PATCHES.md` A 类）永不被覆盖；仅当上游自 `PATCHES.md` 上游引用表中记录的 pinned commit 起真正改动过该文件时，才报告为需要手动合并。上游删除的文件只报告、不删除，由维护者手动 `git rm`。GitHub Actions 提供同名 `vendor-sync` 手动工作流（`workflow_dispatch`，无定时），在日志中输出脚本摘要。
 
 ## 回收游离技能（分发前）
 
@@ -65,6 +65,10 @@ node scripts/consolidate-strays.mjs --apply <name> [--to self]  # 把某个 new 
 ```
 
 默认 dry-run 不写任何文件；apply 保留 store 副本不动；回收的内容要真正生效，还需 commit + push + 再分发一次。
+
+每日 vendor freshness check（`.github/workflows/vendor-freshness-check.yml`，UTC 01:00 定时 + 手动触发）跑 dry-run，把结果变成指派给维护者的单个 `pending-update` issue——上游有未同步内容时开启，副本重新 current 后自动关闭；它从不改文件，真正 sync 仍为手动。
+
+处理 pending update（sync → 对 patched 文件做三方合并 → 更新 pin → 验证 → commit/push/close）由 `skills/self/vendor-sync` 承担（模型调用）：说一句 "resolve the pending update" / "sync vendor skills"，技能驱动全程，最终 commit、push 与关 issue 会先征求你的确认。
 
 ## 约定
 

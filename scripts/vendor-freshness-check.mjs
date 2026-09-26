@@ -172,10 +172,11 @@ function buildBody(s) {
   }
   lines.push("## What to do");
   lines.push("");
-  lines.push("1. Preview: `node scripts/vendor-sync.mjs --dry-run`");
-  lines.push("2. Sync: `node scripts/vendor-sync.mjs`, then review the diff");
-  lines.push("3. Patched files are never overwritten by sync — merge them manually");
-  lines.push("4. Commit & push; this issue closes automatically once the copies are current");
+  lines.push("1. Fast path: have the `vendor-sync` skill drive this whole list — say \"resolve the pending update\"");
+  lines.push("2. Preview: `node scripts/vendor-sync.mjs --dry-run`");
+  lines.push("3. Sync: `node scripts/vendor-sync.mjs`, then review the diff");
+  lines.push("4. Patched files are never overwritten by sync — merge them manually");
+  lines.push("5. Commit & push; this issue closes automatically once the copies are current");
   return lines.join("\n");
 }
 
