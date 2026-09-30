@@ -9,7 +9,7 @@ below** and report it as "upstream updated a patched file — merge manually".
 
 | Source | URL | Pinned commit (diff baseline) |
 |---|---|---|
-| mattpocock/skills | https://github.com/mattpocock/skills | `c55ee46073ed923f86ce59a5eb3b6d895095d1b7` |
+| mattpocock/skills | https://github.com/mattpocock/skills | `d81f3a183412e71a5b1e84ca21bc1a35eea03a60` |
 | yetone/kill-ai-slop | https://github.com/yetone/kill-ai-slop | `f6e2ae32b30443ec7bd0da4da971ee18d8f8ffcb` |
 | cloudflare/security-audit-skill | https://github.com/cloudflare/security-audit-skill | `c1c8a8c1471069fb0e188eeaff69b8e8db6564a8` |
 
