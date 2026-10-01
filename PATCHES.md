@@ -12,8 +12,11 @@ below** and report it as "upstream updated a patched file — merge manually".
 | mattpocock/skills | https://github.com/mattpocock/skills | `c55ee46073ed923f86ce59a5eb3b6d895095d1b7` |
 | yetone/kill-ai-slop | https://github.com/yetone/kill-ai-slop | `f6e2ae32b30443ec7bd0da4da971ee18d8f8ffcb` |
 | cloudflare/security-audit-skill | https://github.com/cloudflare/security-audit-skill | `c1c8a8c1471069fb0e188eeaff69b8e8db6564a8` |
+| github/awesome-copilot | https://github.com/github/awesome-copilot | `caab1f623bb68a330f294a11279597d7ae7be737` |
 
 cloudflare has no A-class patches; the pin records the provenance trace (spec US14 — source found, so it lands under `skills/cloudflare/` rather than `skills/other/`) and is the diff baseline if a patch is ever added.
+
+`github/awesome-copilot` is a manual fork, **not registered in SOURCES**: its `create-readme` SKILL.md was localized (remote template URLs → local `references/` copies), and a synced source would report the local-only `references/` files as removed-upstream, keeping the freshness check permanently pending. The pin records the provenance trace and the diff baseline for the A-class patch below.
 
 `skills/self/` skills are self-authored (no upstream); their counterpart is the
 pre-consolidation home: for `npm-release` the last pre-deletion version is in
@@ -34,6 +37,7 @@ pre-consolidation home: for `npm-release` the last pre-deletion version is in
 | 7 | new | `skills/self/write-release-notes/SKILL.md` | Release-notes temp path `/tmp/release-notes-vX.Y.Z.md` → `$env:TEMP\release-notes-<tag>.md` (steps 3-4, incl. both `--notes-file` args); content relocated from `npm-release` step 7 when the release-notes step was extracted into this skill | self-authored; pre-consolidation copy removed from `~/.pi` in ticket #5 (last version in `~/.pi` repo history at commit `bf65334`) | `gh release create --help` confirms `--notes-file`; `"$env:TEMP\release-notes-vX.Y.Z.md"` resolves via `Test-Path` under PowerShell; both branches end-to-end verified from PowerShell: `gh release create v0.0.0-verify --notes-file "$env:TEMP\release-notes-verify.md"` and `gh release edit v0.0.0-verify-edit --notes-file "$env:TEMP\release-notes-edit.md"` exit 0 with the body confirmed via `gh release view`; both releases and tags deleted after |
 | 8 | new | `skills/mattpocock/engineering/setup-matt-pocock-skills/issue-tracker-gitlab.md` | Claim line: `--assignee @me` → `--assignee "@me"` + PowerShell splatting warning (mirrors GitHub template); heredoc instruction replaced with a PowerShell here-string multi-line approach | mattpocock/skills `skills/engineering/setup-matt-pocock-skills/issue-tracker-gitlab.md` | `git diff` vs pinned upstream shows exactly the changed lines; `glab issue update 1 --assignee @me` → "Flag needs an argument", `--assignee "@me"` → passes parsing |
 | 9 | new | `skills/mattpocock/engineering/ask-matt/SKILL.md` | Precondition paragraph replaced: routes setup to `/setup-repo` (drives `/setup-matt-pocock-skills` then `/setup-coding-standards`, standard answers pre-filled; primitives stay available for partial setup) — supports the self-authored composite `skills/self/setup-repo` | mattpocock/skills `skills/engineering/ask-matt/SKILL.md` | `git diff` vs pinned upstream shows exactly the replaced paragraph |
+| 10 | new | `skills/awesome-copilot/create-readme/SKILL.md` | Task step 2 localized: the 4 remote README template URLs replaced with local `references/` copies (new local-only assets under `skills/awesome-copilot/create-readme/references/`, one-line type annotation each) — the skill no longer fetches template sites at run time | github/awesome-copilot `skills/create-readme/SKILL.md` | `git diff` vs pinned upstream shows step 2 rewritten and the 4 `references/` files added |
 
 ## B-class advisory notes (conditional environment issues — not patched into bodies)
 
