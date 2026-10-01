@@ -76,7 +76,7 @@ npm 发布链路里有几步一旦执行就不可逆(`git push --tags`、`npm pu
 
 ### 8. 沉淀
 **完成判据**:AGENTS.md 发布约定与相关文档已同步。
-更新 AGENTS.md 发布约定段:触发条件、谁负责 bump/tag/push、发布闸门(A 流 approve 2FA / B 流全自动)、错误回滚(`npm stage reject`)、发布说明由 agent 在步骤 7 撰写(而非只依赖 CI 自动生成)。仓库有 CONTEXT.md 等领域文档时补发布流词条。
+更新 AGENTS.md 发布约定段:触发条件、谁负责 bump/tag/push、发布闸门(A 流 approve 2FA / B 流全自动)、错误回滚(`npm stage reject`)、发布说明由 agent 在步骤 7 撰写(而非只依赖 CI 自动生成)。仓库有 GLOSSARY.md 等领域文档时补发布流词条。
 
 ## 定制点
 

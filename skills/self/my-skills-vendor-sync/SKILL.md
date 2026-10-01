@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Vendor-sync maintenance
 
-The upstream leg of the aggregation repo (CONTEXT.md: **vendor sync**): bring every source's **consolidated copies** back to **current** — matching upstream except the documented patches, with the **patch manifest** pins recording the true base — and get the pending-update issue closed. The freshness check detects; this skill maintains.
+The upstream leg of the aggregation repo (GLOSSARY.md: **vendor sync**): bring every source's **consolidated copies** back to **current** — matching upstream except the documented patches, with the **patch manifest** pins recording the true base — and get the pending-update issue closed. The freshness check detects; this skill maintains.
 
 Two invariants (ADR-0002) shape every step: **patched files are never overwritten** — upstream changes enter a patched file only through a merge that preserves the local patch — and **files upstream removed are never deleted** without an explicit call.
 

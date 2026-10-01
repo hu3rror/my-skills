@@ -13,13 +13,13 @@ One-run entry that makes a repo usable by the engineering skills. A thin orchest
 - **Issue tracker**: GitHub
 - **Triage labels**: the default vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`)
 - **Agent file**: edit the one that exists — `CLAUDE.md` if present, else `AGENTS.md`; never create the other
-- **Domain docs**: single-context (`CONTEXT.md` + `docs/adr/` at the root) unless monorepo signals say otherwise
+- **Domain docs**: single-context (`GLOSSARY.md` + `docs/adr/` at the root) unless monorepo signals say otherwise
 
 ## Process
 
 ### 1. Explore
 
-Run the `setup-matt-pocock-skills` exploration step: `git remote -v`, `AGENTS.md`/`CLAUDE.md` at the root, `CONTEXT.md`/`CONTEXT-MAP.md`, `docs/adr/`, `docs/agents/`, `.scratch/`, monorepo signals, and whether the `triage` skill is installed.
+Run the `setup-matt-pocock-skills` exploration step: `git remote -v`, `AGENTS.md`/`CLAUDE.md` at the root, `GLOSSARY.md`/`GLOSSARY-MAP.md`, `docs/adr/`, `docs/agents/`, `.scratch/`, monorepo signals, and whether the `triage` skill is installed.
 
 ### 2. Run `setup-matt-pocock-skills` with the defaults pre-filled
 

@@ -15,7 +15,7 @@ Adapt an extension to the **latest published pi version** by default, or to an e
 
 ### 1. Resolve the target version, locate the SDK, and read its changelog
 
-Resolve `target` in this order: explicit `target=<version>` argument → else the latest published version (npm `dist-tags.latest` for `@earendil-works/pi-coding-agent`; cross-check GitHub releases). **Never** infer target from prior reports, prior syncs, CONTEXT.md, ADRs, git history, or installed devDependencies — the report is write-only.
+Resolve `target` in this order: explicit `target=<version>` argument → else the latest published version (npm `dist-tags.latest` for `@earendil-works/pi-coding-agent`; cross-check GitHub releases). **Never** infer target from prior reports, prior syncs, GLOSSARY.md, ADRs, git history, or installed devDependencies — the report is write-only.
 
 Record the resolved version. If it equals the installed version, skip the fix loop (steps 3–4) but still run step 2's typecheck — the seam catches pre-existing repo debt, not just SDK drift — and run the adoption survey (step 5).
 
@@ -83,7 +83,7 @@ Run the repo's test command. If the test build fails for environment reasons (e.
 ### 7. Document
 
 - ADR for real trade-offs, per the repo's ADR conventions (`docs/adr/`).
-- CONTEXT.md glossary terms if new vocabulary crystallized (e.g. a tool result contract).
+- GLOSSARY.md glossary terms if new vocabulary crystallized (e.g. a tool result contract).
 - README compatibility note (the resolved target version) when the repo keeps one.
 
 **Done when**: docs written per repo conventions.

@@ -27,7 +27,7 @@ absorbs both primitives' content (rejected: creates a second home for the
 vendored flow content that diverges on upstream updates).
 
 **Consequences**: the vendored `ask-matt` now references a self/ skill —
-cross-tree coupling, mitigated by the PATCHES.md row and the CONTEXT.md
+cross-tree coupling, mitigated by the PATCHES.md row and the GLOSSARY.md
 "Repo setup" term so the reference cannot rot silently; `ask-matt` joins the
 patched-file set, adding manual-merge flags whenever upstream churns it (it is
 the most frequently-changing file in the collection — the dominant recurring
