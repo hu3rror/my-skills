@@ -6,7 +6,7 @@ The architectural review is rendered as a single self-contained HTML file in the
 
 ```html
 <!doctype html>
-<html lang="en">
+<html lang="{{report language}}">
   <head>
     <meta charset="utf-8" />
     <title>Architecture review for {{repo name}}</title>
@@ -105,7 +105,7 @@ One larger card. Candidate name, one sentence on why, anchor link to its card. T
 
 ## Tone
 
-Plain English, concise, but the architectural nouns and verbs come straight from the `/codebase-design` skill. Concision is not an excuse to drift.
+Plain prose in the language of the conversation (English when the user writes English, Chinese when they write Chinese), concise, but the architectural nouns and verbs come straight from the `/codebase-design` skill. Glossary terms keep their English form on first use with a parenthetical translation into the report language; never calque-translate them. Concision is not an excuse to drift.
 
 **Use exactly:** module, interface, implementation, depth, deep, shallow, seam, adapter, leverage, locality.
 
