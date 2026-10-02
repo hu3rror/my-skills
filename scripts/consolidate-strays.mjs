@@ -5,8 +5,7 @@
 // classification report, explicit apply for new strays, and a diff report
 // with patch-manifest row templates for modified strays.
 //
-// Every skill found in the store (and any real, non-junction directory in the
-// pi junction farm) is classified as one of:
+// Every skill found in the canonical store is classified as one of:
 //   - new stray:       absent from the lock file and not consolidated in the
 //                      repo -> proposed destination is the unattributed home
 //                      (skills/other/<name>) while provenance is unknown;
@@ -14,9 +13,7 @@
 //                      copy -> destination is the consolidated copy;
 //   - current:         content matches its consolidated copy.
 //
-// Junction entries in ~/.pi/agent/skills are distribution artifacts, never
-// strays, and are skipped. The default mode is dry-run: nothing is written or
-// modified. An explicit --apply <name> copies that new stray into the repo —
+// The default mode is dry-run: nothing is written or modified. An explicit --apply <name> copies that new stray into the repo —
 // skills/other/<name> by default (provenance unknown), skills/self/<name> with
 // --to self. The store copy stays in place; running apply again is a no-op.
 // Modified strays are report-only: apply never copies one — the dry-run
@@ -43,7 +40,6 @@ const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_REPO = resolve(SCRIPT_DIR, "..");
 
 const defaultStore = () => join(homedir(), ".agents", "skills");
-const defaultPi = () => join(homedir(), ".pi", "agent", "skills");
 const defaultLock = () => join(homedir(), ".agents", ".skill-lock.json");
 
 const toPortable = (p) => p.split(sep).join("/");
@@ -51,8 +47,7 @@ const toPortable = (p) => p.split(sep).join("/");
 // --- scanning ---------------------------------------------------------------
 
 // Real skill directories under a scan root. Junctions and symlinks are never
-// skills: in the pi junction farm they are distribution artifacts; in the
-// store a junction would alias another location rather than hold content.
+// skills: a junction would alias another location rather than hold content.
 export function scanSkillDirectories(dir) {
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
@@ -319,11 +314,11 @@ export function classifyStrays(skills, lock, repoRoot) {
   });
 }
 
-// Scan both roots and classify every skill against the lock and the repo.
+// Scan the store and classify every skill against the lock and the repo.
 // Shared by the dry-run report and apply so the two actions cannot drift.
-function classify({ store, pi, lock, repo }) {
+function classify({ store, lock, repo }) {
   const lockData = loadLock(lock);
-  const skills = [...scanSkillDirectories(store), ...scanSkillDirectories(pi)];
+  const skills = scanSkillDirectories(store);
   return classifyStrays(skills, lockData, repo);
 }
 
@@ -350,14 +345,14 @@ function copyTree(src, dest) {
 // idempotent: a skill already consolidated (current) is a no-op, and a
 // modified stray is never copied (its recovery is report-only). The store
 // copy is left in place. Returns { applied, name, kind, destination }.
-export function applyStray({ store, pi, lock, repo, name, home = "other" }) {
+export function applyStray({ store, lock, repo, name, home = "other" }) {
   if (home !== "self" && home !== "other") {
     throw new Error(`invalid home "${home}" (expected "self" or "other")`);
   }
-  const classified = classify({ store, pi, lock, repo });
+  const classified = classify({ store, lock, repo });
   const skill = classified.find((c) => c.name === name);
   if (skill === undefined) {
-    throw new Error(`no skill named "${name}" in the store or pi farm`);
+    throw new Error(`no skill named "${name}" in the store`);
   }
   if (skill.kind === "modified-stray") {
     throw new Error(
@@ -422,7 +417,7 @@ function modifiedStrayDetail(c, repo) {
   return lines;
 }
 
-export function buildReport({ store, pi, lock, repo, classified }) {
+export function buildReport({ store, lock, repo, classified }) {
   const byKind = { "new-stray": [], "modified-stray": [], current: [] };
   for (const c of classified) byKind[c.kind].push(c);
 
@@ -430,7 +425,6 @@ export function buildReport({ store, pi, lock, repo, classified }) {
     "Consolidation report (dry-run)",
     "==============================",
     `Store root:       ${store}`,
-    `pi junction farm: ${pi}`,
     `Lock file:        ${lock}`,
     `Aggregation repo: ${repo}`,
     "",
@@ -458,9 +452,9 @@ export function buildReport({ store, pi, lock, repo, classified }) {
 
 // --- runner ---------------------------------------------------------------
 
-export function consolidate({ store, pi, lock, repo }) {
-  const classified = classify({ store, pi, lock, repo });
-  return { classified, report: buildReport({ store, pi, lock, repo, classified }) };
+export function consolidate({ store, lock, repo }) {
+  const classified = classify({ store, lock, repo });
+  return { classified, report: buildReport({ store, lock, repo, classified }) };
 }
 
 function loadLock(lockPath) {
@@ -490,7 +484,6 @@ export function main(argv = process.argv.slice(2)) {
     if (args.apply !== undefined) {
       const result = applyStray({
         store: args.store,
-        pi: args.pi,
         lock: args.lock,
         repo: args.repo,
         name: args.apply,
@@ -498,7 +491,7 @@ export function main(argv = process.argv.slice(2)) {
       });
       if (result.applied) {
         console.log(
-          `Applied new stray:\n  ${result.name} (${result.kind}) -> ${result.destination}\nStore copy left in place; pi keeps serving the skill.`
+          `Applied new stray:\n  ${result.name} (${result.kind}) -> ${result.destination}\nStore copy left in place.`
         );
       } else {
         console.log(
@@ -520,7 +513,6 @@ export function main(argv = process.argv.slice(2)) {
 function parseArgs(argv) {
   const args = {
     store: defaultStore(),
-    pi: defaultPi(),
     lock: defaultLock(),
     repo: DEFAULT_REPO,
     to: "other",
@@ -531,7 +523,6 @@ function parseArgs(argv) {
     const value = argv[i + 1];
     if (value === undefined) throw new Error(`missing value for ${flag}`);
     if (flag === "--store") args.store = value;
-    else if (flag === "--pi") args.pi = value;
     else if (flag === "--lock") args.lock = value;
     else if (flag === "--repo") args.repo = value;
     else if (flag === "--apply") args.apply = value;
@@ -559,7 +550,6 @@ script never copies one; its patch row must exist first (ADR-0002). With
 
 Options:
   --store <dir>   canonical skills store (default: ~/.agents/skills)
-  --pi <dir>      pi junction farm (default: ~/.pi/agent/skills)
   --lock <file>   distribution lock file (default: ~/.agents/.skill-lock.json)
   --repo <dir>    aggregation repo root (default: this script's parent)
   --apply <name>  copy the named new stray into the repo (idempotent)

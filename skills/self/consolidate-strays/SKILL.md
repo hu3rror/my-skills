@@ -14,7 +14,7 @@ Consolidation is non-destructive: the store copy stays in place, and a recovered
 
 ## 1. Run the dry-run report
 
-Locate the aggregation repo — the git repo owning `scripts/consolidate-strays.mjs`. If you are not already at its root, find it (e.g. `git -C <candidate> rev-parse --show-toplevel`, or search your usual checkout roots); ask the user if it has moved. From the repo root, run the script plain — it resolves the store, the pi junction farm, the lock file, and the repo root itself, so no flags are needed:
+Locate the aggregation repo — the git repo owning `scripts/consolidate-strays.mjs`. If you are not already at its root, find it (e.g. `git -C <candidate> rev-parse --show-toplevel`, or search your usual checkout roots); ask the user if it has moved. From the repo root, run the script plain — it resolves the canonical store, the lock file, and the repo root itself, so no flags are needed:
 
 ```
 node scripts/consolidate-strays.mjs
@@ -73,7 +73,7 @@ When anything was recovered, end by proposing the three steps — the git writes
 3. **distribute** — run the distribution chain so the recovered content goes live in the store and the lock file records it:
 
 ```
-npx skills add hu3rror/my-skills -a pi universal -s '*' -g -y
+npx skills add hu3rror/my-skills -a universal -s '*' -g -y
 ```
 
 The distribution chain owns the lock file; consolidation never edits it. If the report showed nothing to recover, say so — there is nothing to commit, push, or distribute.

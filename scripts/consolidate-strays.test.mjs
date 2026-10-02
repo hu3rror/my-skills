@@ -1,7 +1,7 @@
 // Fixture-based tests for scripts/consolidate-strays.mjs: dry-run
 // classification report, explicit apply, and the modified-stray diff report
 // with patch-manifest row templates. Offline and deterministic: fake store,
-// fake pi junction farm, fake lock file, fake repo layout in temp
+// fake lock file, fake repo layout in temp
 // directories. Asserts external behavior (classification, report output,
 // copied files, untouched store, idempotent re-runs) via the Node built-in
 // test runner — the repo gains no dependency.
@@ -52,12 +52,10 @@ function fixture() {
   const dirs = {
     root,
     store: join(root, "store"),
-    pi: join(root, "pi"),
     repo: join(root, "repo"),
     lock: join(root, ".skill-lock.json"),
   };
   mkdirSync(dirs.store, { recursive: true });
-  mkdirSync(dirs.pi, { recursive: true });
   mkdirSync(dirs.repo, { recursive: true });
   return dirs;
 }
@@ -94,7 +92,6 @@ test("a store skill absent from the lock file and the repo is a new stray with i
 
     const { classified, report } = consolidate({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
     });
@@ -117,7 +114,6 @@ test("a tracked skill whose content differs from its consolidated copy is a modi
 
     const { classified } = consolidate({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
     });
@@ -138,7 +134,6 @@ test("a tracked skill whose content matches its consolidated copy is current, ne
 
     const { classified, report } = consolidate({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
     });
@@ -147,42 +142,6 @@ test("a tracked skill whose content matches its consolidated copy is current, ne
       [["tracked", "current"]]
     );
     assert.match(report, /Totals: 1 current, 0 new stray, 0 modified stray\./);
-  } finally {
-    rmSync(d.root, { recursive: true, force: true });
-  }
-});
-
-// --- junction farm ------------------------------------------------------------
-
-test("junction entries in the pi junction farm are skipped and never reported as strays", () => {
-  const d = fixture();
-  try {
-    makeTree(d.store, { "tracked/SKILL.md": "x" });
-    // Junction to the store (what npx skills creates) plus a real directory
-    // written straight into the farm.
-    symlinkSync(join(d.store, "tracked"), join(d.pi, "tracked"), "junction");
-    makeTree(d.pi, { "farm-stray/SKILL.md": "written into the farm" });
-
-    assert.deepEqual(
-      scanSkillDirectories(d.pi).map((s) => s.name),
-      ["farm-stray"]
-    );
-    assert.deepEqual(
-      scanSkillDirectories(d.store).map((s) => s.name),
-      ["tracked"]
-    );
-
-    makeTree(d.repo, { "skills/tracked/SKILL.md": "x" });
-    writeLock(d.lock, { tracked: { skillPath: "skills/tracked/SKILL.md" } });
-    const { classified } = consolidate({
-      store: d.store,
-      pi: d.pi,
-      lock: d.lock,
-      repo: d.repo,
-    });
-    const names = classified.map((c) => c.name).sort();
-    assert.deepEqual(names, ["farm-stray", "tracked"]);
-    assert.equal(classified.find((c) => c.name === "farm-stray").kind, "new-stray");
   } finally {
     rmSync(d.root, { recursive: true, force: true });
   }
@@ -213,7 +172,6 @@ test("a tracked skill whose only difference is line endings is current, not a mo
 
     const { classified } = consolidate({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
     });
@@ -234,7 +192,6 @@ test("a store skill absent from the lock but already consolidated in the repo is
 
     const { classified } = consolidate({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
     });
@@ -254,7 +211,6 @@ test("a store skill absent from the lock but differing from its repo consolidate
 
     const { classified } = consolidate({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
     });
@@ -279,7 +235,6 @@ test("an untracked store skill whose name collides with a vendored repo copy is 
 
     const { classified } = consolidate({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
     });
@@ -289,7 +244,6 @@ test("an untracked store skill whose name collides with a vendored repo copy is 
 
     const result = applyStray({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
       name: "collide",
@@ -311,7 +265,7 @@ test("CLI exits 0 with no strays and 2 when strays exist", () => {
     makeTree(d.repo, { "skills/tracked/SKILL.md": "same" });
     writeLock(d.lock, { tracked: { skillPath: "skills/tracked/SKILL.md" } });
 
-    const args = [SCRIPT, "--store", d.store, "--pi", d.pi, "--lock", d.lock, "--repo", d.repo];
+    const args = [SCRIPT, "--store", d.store, "--lock", d.lock, "--repo", d.repo];
     const clean = spawnSync(process.execPath, args, { encoding: "utf8" });
     assert.equal(clean.status, 0);
     assert.match(clean.stdout, /Totals: 1 current, 0 new stray, 0 modified stray\./);
@@ -325,24 +279,21 @@ test("CLI exits 0 with no strays and 2 when strays exist", () => {
   }
 });
 
-test("dry-run mode writes or modifies nothing in the store, farm, lock, or repo", () => {
+test("dry-run mode writes or modifies nothing in the store, lock, or repo", () => {
   const d = fixture();
   try {
     makeTree(d.store, { "tracked/SKILL.md": "hello", "brand-new/SKILL.md": "new" });
     makeTree(d.repo, { "skills/tracked/SKILL.md": "hello" });
     writeLock(d.lock, { tracked: { skillPath: "skills/tracked/SKILL.md" } });
-    symlinkSync(join(d.store, "tracked"), join(d.pi, "tracked"), "junction");
 
     const before = {
       store: snapshot(d.store),
-      pi: snapshot(d.pi),
       repo: snapshot(d.repo),
       lock: snapshot(dirname(d.lock)),
     };
-    consolidate({ store: d.store, pi: d.pi, lock: d.lock, repo: d.repo });
+    consolidate({ store: d.store, lock: d.lock, repo: d.repo });
     const after = {
       store: snapshot(d.store),
-      pi: snapshot(d.pi),
       repo: snapshot(d.repo),
       lock: snapshot(dirname(d.lock)),
     };
@@ -362,7 +313,6 @@ test("apply copies a new stray into the unattributed home by default", () => {
 
     const result = applyStray({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
       name: "brand-new",
@@ -387,7 +337,6 @@ test("apply with the self-authored target copies into the self-authored home", (
 
     const result = applyStray({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
       name: "my-skill",
@@ -419,7 +368,6 @@ test("apply preserves the nested file structure and leaves the store copy untouc
 
     applyStray({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
       name: "brand-new",
@@ -449,7 +397,6 @@ test("applying twice is a no-op on the second run and produces no duplicates", (
 
     const first = applyStray({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
       name: "brand-new",
@@ -459,7 +406,6 @@ test("applying twice is a no-op on the second run and produces no duplicates", (
 
     const second = applyStray({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
       name: "brand-new",
@@ -483,7 +429,6 @@ test("apply of a skill already consolidated in the repo is a no-op", () => {
 
     const result = applyStray({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
       name: "brand-new",
@@ -510,7 +455,6 @@ test("apply refuses a modified stray and touches neither the consolidated copy n
       () =>
         applyStray({
           store: d.store,
-          pi: d.pi,
           lock: d.lock,
           repo: d.repo,
           name: "tracked",
@@ -524,43 +468,19 @@ test("apply refuses a modified stray and touches neither the consolidated copy n
   }
 });
 
-test("apply copies a stray written directly into the pi junction farm", () => {
-  const d = fixture();
-  try {
-    makeTree(d.pi, { "farm-stray/SKILL.md": "written into the farm" });
-    writeLock(d.lock, {});
-
-    const result = applyStray({
-      store: d.store,
-      pi: d.pi,
-      lock: d.lock,
-      repo: d.repo,
-      name: "farm-stray",
-    });
-    assert.equal(result.applied, true);
-    assert.equal(
-      readFileSync(join(d.repo, "skills", "other", "farm-stray", "SKILL.md"), "utf8"),
-      "written into the farm"
-    );
-  } finally {
-    rmSync(d.root, { recursive: true, force: true });
-  }
-});
-
 test("apply with an unknown skill name or an invalid home errors", () => {
   const d = fixture();
   try {
     makeTree(d.store, { "brand-new/SKILL.md": "x" });
     writeLock(d.lock, {});
     assert.throws(
-      () => applyStray({ store: d.store, pi: d.pi, lock: d.lock, repo: d.repo, name: "nope" }),
+      () => applyStray({ store: d.store, lock: d.lock, repo: d.repo, name: "nope" }),
       /no skill named "nope"/
     );
     assert.throws(
       () =>
         applyStray({
           store: d.store,
-          pi: d.pi,
           lock: d.lock,
           repo: d.repo,
           name: "brand-new",
@@ -581,7 +501,6 @@ test("CLI apply copies a new stray and a second run is a no-op", () => {
     const args = [
       SCRIPT,
       "--store", d.store,
-      "--pi", d.pi,
       "--lock", d.lock,
       "--repo", d.repo,
       "--apply", "brand-new",
@@ -591,7 +510,7 @@ test("CLI apply copies a new stray and a second run is a no-op", () => {
     assert.equal(first.status, 0);
     assert.match(first.stdout, /Applied new stray/);
     assert.match(first.stdout, /brand-new \(new-stray\) -> skills\/other\/brand-new/);
-    assert.match(first.stdout, /Store copy left in place; pi keeps serving the skill/);
+    assert.match(first.stdout, /Store copy left in place./);
     assert.equal(
       readFileSync(join(d.repo, "skills", "other", "brand-new", "SKILL.md"), "utf8"),
       "new skill"
@@ -618,8 +537,7 @@ test("CLI apply with --to self copies into the self-authored home", () => {
       [
         SCRIPT,
         "--store", d.store,
-        "--pi", d.pi,
-        "--lock", d.lock,
+          "--lock", d.lock,
         "--repo", d.repo,
         "--apply", "my-skill",
         "--to", "self",
@@ -651,8 +569,7 @@ test("CLI apply errors on a modified stray and on an invalid --to value", () => 
       [
         SCRIPT,
         "--store", d.store,
-        "--pi", d.pi,
-        "--lock", d.lock,
+          "--lock", d.lock,
         "--repo", d.repo,
         "--apply", "tracked",
       ],
@@ -667,8 +584,7 @@ test("CLI apply errors on a modified stray and on an invalid --to value", () => 
       [
         SCRIPT,
         "--store", d.store,
-        "--pi", d.pi,
-        "--lock", d.lock,
+          "--lock", d.lock,
         "--repo", d.repo,
         "--apply", "tracked",
         "--to", "vendor",
@@ -693,7 +609,6 @@ test("a modified stray prints a diff summary of the store content versus the con
 
     const { report } = consolidate({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
     });
@@ -721,7 +636,6 @@ test("the report includes a patch-manifest row template for each changed file", 
 
     const { report } = consolidate({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
     });
@@ -748,7 +662,6 @@ test("a skill whose content matches its consolidated copy gets no diff and no ro
 
     const { report } = consolidate({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
     });
@@ -772,7 +685,6 @@ test("a store file differing only in a trailing newline is current, not reported
 
     const { classified, report } = consolidate({
       store: d.store,
-      pi: d.pi,
       lock: d.lock,
       repo: d.repo,
     });
@@ -795,7 +707,7 @@ test("reporting a modified stray modifies neither the consolidated copy nor the 
       lock: snapshot(dirname(d.lock)),
     };
 
-    consolidate({ store: d.store, pi: d.pi, lock: d.lock, repo: d.repo });
+    consolidate({ store: d.store, lock: d.lock, repo: d.repo });
 
     assert.deepEqual(snapshot(d.store), before.store);
     assert.deepEqual(snapshot(d.repo), before.repo);
@@ -913,7 +825,7 @@ test("CLI dry-run reports a modified stray with a diff and a row template, touch
 
     const res = spawnSync(
       process.execPath,
-      [SCRIPT, "--store", d.store, "--pi", d.pi, "--lock", d.lock, "--repo", d.repo],
+      [SCRIPT, "--store", d.store, "--lock", d.lock, "--repo", d.repo],
       { encoding: "utf8" }
     );
     assert.equal(res.status, 2);

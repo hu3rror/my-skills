@@ -10,7 +10,8 @@ The user runs two pi instances: one on Windows (default shell is PowerShell
 skills come from upstream repositories — `mattpocock/skills` and
 `yetone/kill-ai-slop` — plus self-authored skills, and are distributed via the
 `npx skills` CLI (`vercel-labs/skills`) into a canonical `~/.agents/skills`
-directory, with `~/.pi/agent/skills` containing junctions to it.
+directory, which pi (and other harnesses reading the standard Agent Skills
+location) consumes directly.
 
 A full audit of every skill file found real PowerShell conflicts (4 must-fix
 spots) plus conditional environment-dependent issues, and — critically — the
@@ -34,8 +35,9 @@ for manual merge. Windows-side, move the two pi-specific skills
 and weave a PowerShell-execution-environment constraint into the existing
 `~/.pi/agent/AGENTS.md` structure (not as a standalone rule).
 
-Distribution chain stays unchanged: `npx skills add hu3rror/my-skills -a pi universal -s '*' -g`
-writes the canonical copy to `~/.agents/skills` and re-creates the pi junctions.
+Distribution chain: `npx skills add hu3rror/my-skills -a universal -s '*' -g`
+writes the canonical copy to `~/.agents/skills`, which pi and other harnesses
+read directly — no per-agent links.
 
 ## User Stories
 
@@ -87,9 +89,9 @@ writes the canonical copy to `~/.agents/skills` and re-creates the pi junctions.
 14. As the maintainer, I want `security-audit`'s upstream provenance traced; if
     no source is found it lands under `skills/other/`, so that no skill is
     orphaned or mis-attributed.
-15. As the maintainer, I want `npx skills add hu3rror/my-skills -a pi universal
-    -s '*' -g` re-run after the migration so that the canonical `~/.agents/skills` and the
-    `~/.pi/agent/skills` junctions reflect the new consolidated layout.
+15. As the maintainer, I want `npx skills add hu3rror/my-skills -a universal
+    -s '*' -g` re-run after the migration so that the canonical
+    `~/.agents/skills` reflects the new consolidated layout.
 16. As the maintainer, I want the conditional (B-class) issues — jq dependency
     in `npm-release`, `curl` alias semantics in `diagnosing-bugs`, `rg` in
     `kill-ai-slop` references, the `bash` phrasing in `web-debug` — recorded in
@@ -98,8 +100,9 @@ writes the canonical copy to `~/.agents/skills` and re-creates the pi junctions.
 17. As a WSL pi user, I want the fixes to never remove bash-first behavior, so
     that the WSL instance (which uses bash natively) is unaffected.
 18. As the maintainer, I want a verification checklist run after
-    re-distribution (junctions present, `npx skills list` shows all skills,
-    each patched command works in PowerShell), so that "done" means verified.
+    re-distribution (canonical store populated, `npx skills list` shows all
+    skills, each patched command works in PowerShell), so that "done" means
+    verified.
 
 ## Implementation Decisions
 
@@ -153,11 +156,10 @@ writes the canonical copy to `~/.agents/skills` and re-creates the pi junctions.
   per-command checks on the exact patched commands under PowerShell. A passing
   scan is not the same as a command that runs.
 - **Modules tested**:
-  - Distribution: `npx skills add hu3rror/my-skills -a pi universal -s '*' -g`
-    succeeds; `npx
-    skills list` shows all 27+ skills; `~/.pi/agent/skills/*` junctions point at
-    `~/.agents/skills/*`; `npm-release`/`pi-extension-sync` no longer exist as
-    real dirs under `~/.pi/agent/skills`.
+  - Distribution: `npx skills add hu3rror/my-skills -a universal -s '*' -g`
+    succeeds; `npx skills list` shows all 27+ skills under `~/.agents/skills`;
+    `npm-release`/`pi-extension-sync` are no longer installed from `~/.pi`
+    (they live in `skills/self/` and ship through the canonical store).
   - Patched commands: wizard verification alternatives run under PowerShell;
     `gh release create --notes-file "$env:TEMP\..."` runs; `glab issue update
     <n> --assignee "@me"` (dry-run/help-level) does not hit the splatting
@@ -211,6 +213,12 @@ writes the canonical copy to `~/.agents/skills` and re-creates the pi junctions.
   is never created; universal installs canonical-only). The mistaken agent
   junctions were pruned with `npx skills remove -g -y --all -a <agent>...`,
   leaving empty `skills` dirs behind which were then removed.
+- **Revision (canonical-only distribution, 2026-10-02)**: superseded by
+  `-a universal` alone — it writes the canonical `~/.agents/skills` store and
+  creates no per-agent links at all. pi reads the standard Agent Skills
+  location natively, so the `~/.pi/agent/skills` junction farm is no longer
+  created or maintained; all distribution, update, remove, and consolidation
+  commands in this repo use `-a universal`.
 - **Revision (vendor freshness check, 2026-09-22)**: US11 and the Out-of-Scope
   "Scheduled/automated upstream sync (manual-trigger workflow only, for now)"
   are superseded for the detection half. `vendor-freshness-check.yml` (cron UTC
@@ -233,6 +241,6 @@ writes the canonical copy to `~/.agents/skills` and re-creates the pi junctions.
 
 - 决策：全部公共技能并入自建聚合仓库 hu3rror/my-skills，按来源分目录，以本机快照为基线；修复 4 处 PowerShell 冲突，补丁全部记入 PATCHES.md。
 - 理由：vercel-labs/skills 无补丁层，直接改 ~/.agents/skills 会被 npx skills update 覆盖；聚合仓库 + 补丁清单是可持续的维护形态。
-- 影响：分发链不变（npx skills add → canonical + pi junction）；npm-release/pi-extension-sync 迁出 ~/.pi 进 skills/self/；AGENTS.md 第 2 节融入 PowerShell 执行环境约束。
+- 影响：分发链只写 canonical ~/.agents/skills（-a universal，不再建 pi junction）；npm-release/pi-extension-sync 迁出 ~/.pi 进 skills/self/；AGENTS.md 第 2 节融入 PowerShell 执行环境约束。
 - 风险：同步脚本若未按 PATCHES.md 跳过补丁文件会覆盖本地适配（已设计 skip+提醒）；security-audit 来源未溯源（暂归 other/）。
 - 待定：上游同步 workflow 先手动触发，不设定时（2026-09-22 修订：检测半块改为每日 cron 的 vendor freshness check，只 dry-run + pending-update issue，不写文件；真实 sync 仍手动）；B 类条件性问题只入备忘不改正文。

@@ -6,13 +6,20 @@ Status: accepted
 
 ## Context
 
-Agent edits to skills land in the canonical skills store: pi reports skill locations at junction paths (`~/.pi/agent/skills/<name>` → `~/.agents/skills/<name>`), so a write through the reported path resolves into the store. The store is unversioned and the next distribution or update silently overwrites it. The aggregation repo is the only content source; the store is a derived target. Redirecting pi's runtime to read the aggregation repo directly would fix the write target, but carries costs (see Considered Options). We chose instead to keep the runtime as-is and recover the store's unversioned content after the fact.
+Agent edits to skills land in the canonical skills store: pi reports skill
+locations directly at canonical paths (`~/.agents/skills/<name>`), so a write
+through the reported path resolves into the store. The store is unversioned and
+the next distribution or update silently overwrites it. The aggregation repo is
+the only content source; the store is a derived target. Redirecting pi's
+runtime to read the aggregation repo directly would fix the write target, but
+carries costs (see Considered Options). We chose instead to keep the runtime
+as-is and recover the store's unversioned content after the fact.
 
 ## Decision
 
 Keep pi reading the canonical skills store. Add a manual, on-demand consolidation mechanism that, before the next distribution, copies stray skills from the store into the aggregation repo:
 
-- A **new stray** (a store skill the distribution chain does not track, e.g. written directly into `~/.pi/agent/skills/`) is copied to `skills/self/` when self-authored, or `skills/other/` while provenance is unknown.
+- A **new stray** (a store skill the distribution chain does not track, e.g. written directly into `~/.agents/skills/`) is copied to `skills/self/` when self-authored, or `skills/other/` while provenance is unknown.
 - A **modified stray** (a tracked skill whose store content differs from its consolidated copy) is recovered by recording the deviation as a `PATCHES.md` row per ADR-0002 and then copying the store content back into the consolidated copy. The script is report-only here: it prints the diff and the row template, and the copy-back happens only after the row exists (SKILL.md step 3), so vendor sync never overwrites the edit.
 - The store copy is left in place; consolidation never deletes from the store. Making the recovered edit live in the store requires commit + push + a re-run of the distribution chain.
 - Trigger: a script (`scripts/consolidate-strays.mjs`) wrapped in a skill (`skills/self/consolidate-strays/`), invoked manually. No automatic triggering.
@@ -28,4 +35,7 @@ Keep pi reading the canonical skills store. Add a manual, on-demand consolidatio
 - The store remains a legitimate place for unversioned, in-session edits; the loss window is bounded by the next distribution of that skill.
 - Consolidation must run before any distribution or update, never after.
 - PATCHES.md discipline extends to modified strays: a recovered edit to a vendored skill is only safe once its patch row exists.
-- `~/.pi/agent/skills` junctions stay; they are distribution artifacts, not strays.
+- `~/.agents/skills` holds the canonical copies directly; there are no pi-specific
+  junctions to treat as distribution artifacts. A stray is simply a store skill
+  the lock file does not track, or one whose content differs from its
+  consolidated copy.

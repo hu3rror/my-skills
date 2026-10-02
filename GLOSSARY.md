@@ -17,7 +17,7 @@ The machine-local runtime directory (`~/.agents/skills`) that `npx skills` insta
 _Avoid_: canonical source, canonical copies (reserve "canonical" for this store)
 
 **Distribution chain**:
-The pipeline `npx skills add <aggregation repo> -a pi universal -s '*' -g` → canonical skills store + pi junctions. The explicit `-a pi universal` targets pi only: a single `-a` argument flips the CLI into copy mode (real directories instead of junctions) and `--all` would link every agent detected on the machine. Works only while the aggregation repo stays the single configured source.
+The pipeline `npx skills add <aggregation repo> -a universal -s '*' -g` → canonical skills store (`~/.agents/skills`), which pi and the other harnesses that read the standard Agent Skills location consume directly. `-a universal` targets only the canonical store: a single `-a <agent>` argument flips the CLI into copy mode (writing real skill directories into that agent's own folder) and `--all` would link every agent detected on the machine. Works only while the aggregation repo stays the single configured source.
 _Avoid_: install (a single hop, not the chain)
 
 **Vendor sync**:
@@ -25,7 +25,7 @@ The upstream leg of the skill flow, opposite the distribution chain: the script 
 _Avoid_: sync script (too generic)
 
 **Junction**:
-The link type in `~/.pi/agent/skills` that exposes canonical-store skills to pi without copying. The pi config hosts no skill copies — junctions only.
+The link type a per-agent installer (e.g. `npx skills -a <agent>`) writes into an agent-specific skills folder (such as `~/.claude/skills`) to expose canonical-store skills without copying. Not used by this repo's distribution chain, which installs to the canonical store directly so every harness reading the standard location sees the same content.
 _Avoid_: symlink (a different Windows mechanism), pi skills (ambiguous with pi-specific skill)
 
 **Upstream**:

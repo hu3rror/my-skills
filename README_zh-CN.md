@@ -24,19 +24,19 @@
 - `setup-matt-pocock-skills/issue-tracker-github.md`：`--add-assignee "@me"` 加引号 + Windows PowerShell splatting 警告
 - `kill-ai-slop/SKILL.md`：`disable-model-invocation: true`
 
-两个 pi 专属技能（`npm-release`、`pi-extension-sync`）从 Windows pi 配置迁移进 `skills/self/`，`~/.pi` 不再托管技能副本（junction-only；迁移见 ticket #5）。
+两个 pi 专属技能（`npm-release`、`pi-extension-sync`）从 Windows pi 配置迁移进 `skills/self/`，`~/.pi` 不再托管技能副本（迁移见 ticket #5）。
 
 ## 安装 / 分发
 
 ```bash
-# Install globally (~/.agents/skills), create links for pi only.
-# Do NOT use --all: it links every agent detected on this machine.
-# -a pi universal keeps the CLI in symlink (junction) mode; a single
-# -a target silently falls back to copy mode (real dirs, not junctions).
-npx skills add hu3rror/my-skills -a pi universal -s '*' -g -y
+# 全局安装进 canonical store（~/.agents/skills）。
+# 不要用 --all：它会对本机所有已检测 agent 建链接。
+# -a universal 只写 canonical store；单一
+# -a 目标会静默退化为 copy 模式（真实目录，非 junction）。
+npx skills add hu3rror/my-skills -a universal -s '*' -g -y
 ```
 
-分发链保持不变：canonical 目录 + pi junctions 都由 CLI 生成。`-a pi universal` 只对 pi 建链接——追加 `universal` 是为了让 CLI 保持 junction 模式（单一 `-a` 目标会静默退化为 copy 模式，把 pi 目录写成本地副本而不是 junction）；`--all` 会对本机所有已检测 agent 建链接，本仓库只需要 pi，不要用。
+分发链只写 canonical store，pi 与其它读取标准 Agent Skills 位置的 harness 直接消费，不建任何 per-agent 链接。`-a universal` 只写 canonical store——单一 `-a` 目标会静默退化为 copy 模式（把真实目录写进该 agent 自己的文件夹）；`--all` 会对本机所有已检测 agent 建链接，本仓库不需要，不要用。
 
 ## 同步上游
 
@@ -54,7 +54,7 @@ node scripts/vendor-sync.mjs
 
 canonical store 是派生目标：直接写进 `~/.agents/skills` 的内容会被下一次分发或更新静默覆盖。每次跑分发链之前——或本地改动过任何技能之后——先跑一次回收（consolidation），把分发链不追踪的内容救回聚合仓库：
 
-- **new stray（新游离技能）**——lock 文件与仓库都没有记录的 store 技能（直接写进 store 或 pi junction farm）——按需复制进仓库：自创内容放 `skills/self/<name>`，来源不明放 `skills/other/<name>`；
+- **new stray（新游离技能）**——lock 文件与仓库都没有记录的 store 技能（直接写进 store）——按需复制进仓库：自创内容放 `skills/self/<name>`，来源不明放 `skills/other/<name>`；
 - **modified stray（修改过的游离技能）**——内容与 consolidated copy 不一致的 tracked 技能——输出 diff 摘要与 `PATCHES.md` 行模板；补丁行要先补进清单再回收（ADR-0002），consolidation 永不自动复制 modified stray。
 
 对 pi 说 "consolidate stray skills"（`skills/self/consolidate-strays`，模型调用、description 限定范围，其他 harness 不会误触发），或直接跑脚本：
