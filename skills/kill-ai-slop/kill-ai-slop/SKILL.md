@@ -17,7 +17,8 @@ description: >-
   hierarchies, invented stat rows, 01/02/03 section
   markers, cards nested in cards, the default Inter/Space Grotesk look, and
   more. Works on HTML/CSS, React/Vue/Svelte/Astro, Tailwind, PHP, and Markdown
-  copy.
+  copy. For plain-text editing of Chinese or English writing outside a
+  codebase, use `de-slop` instead.
 ---
 
 # Kill AI Slop
