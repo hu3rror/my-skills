@@ -68,6 +68,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
 function main() {
   const patchedSet = parsePatchedFiles();
   const pins = parseUpstreamRefs();
+  const excludedRoots = parseExcludedRoots();
   if (patchedSet.size === 0) {
     console.error(
       "PATCHES.md: no A-class patched files found. Refusing to sync — proceeding would risk overwriting local patches.",
@@ -99,7 +100,7 @@ function main() {
 
   for (const source of SOURCES) {
     console.log(`\n=== ${source.name} — ${source.url} ===`);
-    const r = syncSource(source, patchedSet, pins);
+    const r = syncSource(source, patchedSet, pins, excludedRoots);
     for (const p of r.added) log("add", p);
     for (const p of r.updated) log("update", p);
     for (const p of r.removed) console.log(`  kept (removed upstream) ${p}`);
@@ -195,7 +196,8 @@ function main() {
   process.exit(failed ? 1 : 0);
 }
 
-function syncSource(source, patchedSet, pins) {
+function syncSource(source, patchedSet, pins, excludedRoots) {
+  const excluded = excludedRoots.get(source.repo) ?? [];
   const r = {
     added: [],
     updated: [],
@@ -240,7 +242,7 @@ function syncSource(source, patchedSet, pins) {
 
     // Enumerate every upstream skill file, mapped to its repo-relative path.
     const managed = new Map(); // repoRelPath -> absolute upstream path
-    for (const { upstreamDir, targetRel } of source.skillRoots(cloneDir)) {
+    for (const { upstreamDir, targetRel } of source.skillRoots(cloneDir, excluded)) {
       for (const rel of walkFiles(upstreamDir)) {
         managed.set(`${targetRel}/${rel}`, join(upstreamDir, ...rel.split("/")));
       }
@@ -292,7 +294,7 @@ function syncSource(source, patchedSet, pins) {
   }
 }
 
-function mattpocockSkillRoots(cloneDir) {
+export function mattpocockSkillRoots(cloneDir, excluded = []) {
   const scan = join(cloneDir, "skills");
   const roots = [];
   for (const rel of walkFiles(scan)) {
@@ -301,6 +303,10 @@ function mattpocockSkillRoots(cloneDir) {
     // Mattpocock skill roots sit exactly at skills/<category>/<name>/SKILL.md;
     // deeper SKILL.md files are internals of a skill, not separate skills.
     if (skillRel.split("/").length !== 2) continue;
+    // Manifest-declared exclusions (PATCHES.md "Excluded from vendor sync")
+    // are skipped silently — the paths are upstream-repo-relative and matched
+    // boundary-safe, so a category exclusion covers every skill under it.
+    if (isExcludedUpstreamPath(`skills/${skillRel}`, excluded)) continue;
     roots.push({
       upstreamDir: join(scan, ...skillRel.split("/")),
       targetRel: ["skills", "mattpocock", ...skillRel.split("/")].join("/"),
@@ -310,6 +316,8 @@ function mattpocockSkillRoots(cloneDir) {
 }
 
 function fixedSkillRoots(roots) {
+  // Fixed roots enumerate their source's whole tree; they take no exclusions
+  // (extra call arguments are ignored by JS).
   return (cloneDir) =>
     roots.map(({ upstream, target }) => ({
       upstreamDir: join(cloneDir, ...upstream.split("/")),
@@ -334,24 +342,14 @@ function walkFiles(dir, base = dir) {
 function parsePatchedFiles() {
   // Column index of "File (repo-relative)" in the A-class table.
   const FILE_COLUMN = 3;
-  const text = readFileSync(PATCHES_PATH, "utf8");
-  let inA = false;
   const files = new Set();
-  for (const line of text.split(/\r?\n/)) {
-    if (line.startsWith("## A-class")) {
-      inA = true;
-      continue;
+  parseSectionTable(readFileSync(PATCHES_PATH, "utf8"), "## A-class", (cells) => {
+    if (cells.length <= FILE_COLUMN) return;
+    const file = cells[FILE_COLUMN] || "";
+    if (file && file !== "File (repo-relative)" && !/^-+$/.test(file)) {
+      files.add(file);
     }
-    if (inA && line.startsWith("## ")) break;
-    if (inA && line.startsWith("|")) {
-      const cells = line.split("|");
-      if (cells.length <= FILE_COLUMN) continue;
-      const file = (cells[FILE_COLUMN] || "").trim().replace(/`/g, "");
-      if (file && file !== "File (repo-relative)" && !/^-+$/.test(file)) {
-        files.add(file);
-      }
-    }
-  }
+  });
   return files;
 }
 
@@ -360,25 +358,62 @@ function parsePatchedFiles() {
 // freshness check distinguish "upstream changed a patched file" (pending) from
 // "our patch makes it differ" (current).
 export function parseUpstreamRefs(text = readFileSync(PATCHES_PATH, "utf8")) {
-  let inRefs = false;
   const pins = new Map();
-  for (const line of text.split(/\r?\n/)) {
-    if (line.startsWith("## Upstream references")) {
-      inRefs = true;
-      continue;
-    }
-    if (inRefs && line.startsWith("## ")) break;
-    if (!inRefs || !line.startsWith("|")) continue;
-    const cells = line.split("|").map((c) => c.trim().replace(/`/g, ""));
+  parseSectionTable(text, "## Upstream references", (cells) => {
     // | Source | URL | Pinned commit (diff baseline) |  → cells[1], cells[3]
-    if (cells.length < 4) continue;
+    if (cells.length < 4) return;
     const repo = cells[1];
     const pin = cells[3];
     if (repo && repo !== "Source" && pin && !/^-+$/.test(pin)) {
       pins.set(repo, pin);
     }
-  }
+  });
   return pins;
+}
+
+// Parse PATCHES.md's "Excluded from vendor sync" section: Source repo -> list of
+// upstream-repo-relative path prefixes the sync must skip silently (curation,
+// not drift — they must never surface as pending updates). Absent section or
+// absent rows parse to an empty map, so a manifest without the section behaves
+// exactly as before.
+export function parseExcludedRoots(text = readFileSync(PATCHES_PATH, "utf8")) {
+  const excluded = new Map();
+  parseSectionTable(text, "## Excluded from vendor sync", (cells) => {
+    // | Source | Excluded upstream path | Reason |  → cells[1], cells[2]
+    if (cells.length < 3) return;
+    const repo = cells[1];
+    const path = cells[2];
+    if (repo && repo !== "Source" && path && !/^-+$/.test(path)) {
+      if (!excluded.has(repo)) excluded.set(repo, []);
+      excluded.get(repo).push(path);
+    }
+  });
+  return excluded;
+}
+
+// Scan one `## <heading>` table in PATCHES.md and call `row` for every data row
+// with the backtick-stripped, trimmed cells; header and separator rows are left
+// to the caller's row predicate to skip. A section runs until the next `## `
+// heading, so later sections never leak in; a missing section yields nothing.
+function parseSectionTable(text, heading, row) {
+  let inSection = false;
+  for (const line of text.split(/\r?\n/)) {
+    if (line.startsWith(heading)) {
+      inSection = true;
+      continue;
+    }
+    if (inSection && line.startsWith("## ")) break;
+    if (!inSection || !line.startsWith("|")) continue;
+    row(line.split("|").map((c) => c.trim().replace(/`/g, "")));
+  }
+}
+
+// Boundary-safe prefix match: an excluded prefix covers the path itself and
+// everything under it (`skills/in-progress` covers `skills/in-progress/loop-me`)
+// but never a sibling with a longer name (`skills/in-progressing/...` is not
+// covered). Callers pass upstream-repo-relative paths on both sides.
+export function isExcludedUpstreamPath(upstreamRel, excludedPaths) {
+  return excludedPaths.some((p) => upstreamRel === p || upstreamRel.startsWith(`${p}/`));
 }
 
 // Does a patched file need a manual merge? Only when upstream changed it since

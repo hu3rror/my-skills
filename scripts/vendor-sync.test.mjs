@@ -8,7 +8,16 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseUpstreamRefs, patchedNeedsMerge } from "./vendor-sync.mjs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join, sep } from "node:path";
+import { tmpdir } from "node:os";
+import {
+  isExcludedUpstreamPath,
+  mattpocockSkillRoots,
+  parseExcludedRoots,
+  parseUpstreamRefs,
+  patchedNeedsMerge,
+} from "./vendor-sync.mjs";
 
 // Mirrors PATCHES.md's real upstream-references table.
 const REFS_FIXTURE = `# PATCHES.md — Patch manifest
@@ -48,6 +57,104 @@ test("parseUpstreamRefs tolerates a bare empty table", () => {
     [...parseUpstreamRefs("## Upstream references\n\n| Source | URL | Pinned commit |\n|---|---|---|\n").entries()],
     [],
   );
+});
+
+// Mirrors PATCHES.md's future "Excluded from vendor sync" section: upstream
+// paths (repo-relative within the upstream repo) the sync must skip silently.
+const EXCLUDED_FIXTURE = `${REFS_FIXTURE}
+## Excluded from vendor sync
+
+| Source | Excluded upstream path | Reason |
+|---|---|---|
+| mattpocock/skills | \`skills/in-progress\` | beta category, not needed |
+| mattpocock/skills | \`skills/misc\` | uncurated one-offs, not needed |
+| mattpocock/skills | \`skills/engineering/wizard\` | not used by this maintainer |
+`;
+
+test("parseExcludedRoots maps each source to its excluded upstream paths", () => {
+  assert.deepEqual([...parseExcludedRoots(EXCLUDED_FIXTURE).entries()], [
+    ["mattpocock/skills", ["skills/in-progress", "skills/misc", "skills/engineering/wizard"]],
+  ]);
+});
+
+test("parseExcludedRoots ignores the table header, separator, and other sections", () => {
+  const excluded = parseExcludedRoots(EXCLUDED_FIXTURE);
+  assert.equal(excluded.size, 1);
+  assert.deepEqual(excluded.get("mattpocock/skills"), [
+    "skills/in-progress",
+    "skills/misc",
+    "skills/engineering/wizard",
+  ]);
+});
+
+test("parseExcludedRoots tolerates a manifest without the section", () => {
+  assert.equal(parseExcludedRoots(REFS_FIXTURE).size, 0);
+});
+
+test("isExcludedUpstreamPath matches only under the excluded prefix", () => {
+  const excluded = ["skills/in-progress", "skills/engineering/wizard"];
+  // Under the prefix: the category itself and everything below it.
+  assert.equal(isExcludedUpstreamPath("skills/in-progress", excluded), true);
+  assert.equal(isExcludedUpstreamPath("skills/in-progress/loop-me", excluded), true);
+  assert.equal(isExcludedUpstreamPath("skills/engineering/wizard", excluded), true);
+  // Sibling with a longer name, or an unrelated path: never matched.
+  assert.equal(isExcludedUpstreamPath("skills/in-progressing/x", excluded), false);
+  assert.equal(isExcludedUpstreamPath("skills/engineering/code-review", excluded), false);
+  assert.equal(isExcludedUpstreamPath("skills/misc/setup-pre-commit", excluded), false);
+});
+
+// Build a fixture tree from repo-relative path → content pairs, offline and
+// deterministic (no network, no clones).
+function makeTree(root, paths) {
+  for (const [rel, content] of Object.entries(paths)) {
+    const abs = join(root, ...rel.split("/"));
+    mkdirSync(dirname(abs), { recursive: true });
+    writeFileSync(abs, content);
+  }
+}
+
+test("mattpocockSkillRoots skips excluded categories and skills, keeps the rest", () => {
+  const root = mkdtempSync(join(tmpdir(), "roots-"));
+  try {
+    makeTree(root, {
+      "skills/engineering/code-review/SKILL.md": "a",
+      "skills/engineering/wizard/SKILL.md": "b",
+      "skills/in-progress/loop-me/SKILL.md": "c",
+      "skills/misc/setup-pre-commit/SKILL.md": "d",
+      "skills/productivity/grilling/SKILL.md": "e",
+    });
+    const excluded = [
+      "skills/in-progress",
+      "skills/misc",
+      "skills/engineering/wizard",
+    ];
+    const targets = mattpocockSkillRoots(root, excluded).map((r) => r.targetRel).sort();
+    assert.deepEqual(targets, [
+      "skills/mattpocock/engineering/code-review",
+      "skills/mattpocock/productivity/grilling",
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("mattpocockSkillRoots maps every root when nothing is excluded", () => {
+  const root = mkdtempSync(join(tmpdir(), "roots-"));
+  try {
+    makeTree(root, {
+      "skills/engineering/wizard/SKILL.md": "b",
+      "skills/in-progress/loop-me/SKILL.md": "c",
+      "skills/productivity/grilling/SKILL.md": "e",
+    });
+    const targets = mattpocockSkillRoots(root, []).map((r) => r.targetRel).sort();
+    assert.deepEqual(targets, [
+      "skills/mattpocock/engineering/wizard",
+      "skills/mattpocock/in-progress/loop-me",
+      "skills/mattpocock/productivity/grilling",
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("patchedNeedsMerge: upstream unchanged since the pin → current, never pending", () => {

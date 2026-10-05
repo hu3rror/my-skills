@@ -8,7 +8,7 @@
 
 | 目录 | 来源 | 说明 |
 |---|---|---|
-| `skills/mattpocock/{engineering,productivity,in-progress}/<name>/` | [mattpocock/skills](https://github.com/mattpocock/skills) | 23 个技能，保留上游 `engineering` / `productivity` / `in-progress` 分类 |
+| `skills/mattpocock/{engineering,productivity}/<name>/` | [mattpocock/skills](https://github.com/mattpocock/skills) | 24 个技能（engineering 18 + productivity 6）；上游 `in-progress` / `misc` 分类及三个未使用的技能已从 vendor sync 排除（见 PATCHES.md） |
 | `skills/kill-ai-slop/<name>/` | [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop) | kill-ai-slop（上游路径为 `skill/`，聚合后归一为来源目录） |
 | `skills/cloudflare/<name>/` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | security-audit（来源已溯源，记录于本机 `~/.agents/.skill-lock.json`） |
 | `skills/self/<name>/` | 自建 | de-slop、web-debug、consolidate-strays（通用；de-slop 带 `disable-model-invocation: true`，仅显式调用；consolidate-strays 为模型调用——description 限定在 stray 回收请求，且默认跑只读 dry-run，避免其他 harness 误触发）；write-release-notes（通用，模型调用——description 限定在 GitHub Release 发布说明请求，只在写发布说明时触发）；setup-repo（通用，`disable-model-invocation: true`——一次性仓库 setup，驱动 `setup-matt-pocock-skills` 再 `setup-coding-standards`，见 ADR-0005）；npm-release、pi-extension-sync（pi 专属，带 `disable-model-invocation: true`，避免其他 harness 自动触发） |
