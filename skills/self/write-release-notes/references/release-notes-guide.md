@@ -12,26 +12,36 @@
 
 ## 结构模板
 
+模板为**英文骨架**（发布说明用英文产出时直接照抄；中文仅作理解，不要抄入产出）。
+
 ```markdown
-## 亮点
-一两句话说清这个版本"对用户来说变了什么",而不是"改了哪些代码"。
+## Highlights
+Say in one or two sentences what changed for the user — not which files changed.
 
 ## Features
-- 具体新增的能力,说清用户视角的效果(不是函数名/文件名堆砌)
+- Each new capability, described from the user's viewpoint.
 
 ## Fixes
-- 修了什么问题、之前的症状是什么,让用户能判断"这是不是我遇到的那个 bug"
+- What was broken and the symptom before the fix, so readers can judge whether they hit it.
 
 ## Docs / Chore
-- 影响使用方式的文档或工具链变更;纯内部重构、无用户可感知影响的可以省略或合并成一行
+- Docs or toolchain changes that affect how the tool is used; drop or merge pure internal refactors with no user-visible effect.
 
 ## ⚠️ Breaking Changes
-- 没有破坏性变更就省略这一节;有的话必须写清迁移方法,不能只说"接口变了"
-- 读者是最终用户的软件(桌面/CLI 工具):Breaking 指需要用户行动的变化——系统要求提升、配置文件格式变化、移除的功能;迁移方法写给用户"怎么改",不是写给调用方开发者
+- Omit this section when nothing breaks; when present, always give the migration path — never just "the interface changed".
 
 ## Full Changelog
 `https://github.com/<owner>/<repo>/compare/v0.5.0...v0.6.0`
 ```
+
+各节中文要点（理解用，不抄）：
+
+- **Highlights**：一两句话说清"这个版本对用户变了什么"，不是改了哪些代码。
+- **Features**：每条从用户视角写效果，不是函数名/文件名堆砌。
+- **Fixes**：写清之前症状，让读者判断"是不是我遇到的那个 bug"。
+- **Docs / Chore**：影响使用方式的文档或工具链变更；纯内部重构、无用户可感知影响的可省略或合并成一行。
+- **Breaking Changes**：没有破坏性变更就整节删掉；有则必须写清迁移方法，不能只说"接口变了"——桌面/CLI 软件面向最终用户写"怎么改"，不是写给调用方开发者。
+- **Full Changelog**：保留 compare 链接，给想看完整 diff 的人。
 
 Full Changelog 链接依然保留在最后——对想看完整 diff 的人有用,它是补充素材,而不是整篇发布说明。
 
