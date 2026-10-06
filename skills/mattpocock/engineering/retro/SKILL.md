@@ -10,7 +10,7 @@ The user has asked for a **retrospective**. You are suggesting improvements to t
 
 1. Load the `writing-for-agents` skill (read its SKILL.md) for the writing style guide.
 
-2. Read the primary sources for the session the user specifies. This may mean searching through session logs on this machine. If the user doesn't specify a session, default to the current one.
+2. Read the primary sources for the session the user specifies. This may mean searching through session logs on this machine — use the `session-search` skill (UTF-8-safe query over `~/.pi/agent/sessions` JSONL; supersedes ad-hoc grep/python one-liners). If the user doesn't specify a session, default to the current one.
 
 3. Look for candidates for improvement in these categories.
 
