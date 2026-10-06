@@ -83,5 +83,6 @@ node scripts/consolidate-strays.mjs --apply <name> [--to self]  # 把某个 new 
 
 ## 相关文档
 
+- 日常维护运行手册（如何验证 / 各场景怎么做）：`docs/agents/maintenance_zh-CN.md`（英文版 `docs/agents/maintenance.md`）
 - 维护规范与迁移计划：`docs/specs/powershell-portability-and-maintenance.md`
 - 仓库协作约定：`AGENTS.md`、`docs/agents/`
