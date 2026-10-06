@@ -268,10 +268,10 @@ migration can split them into per-patch records unambiguously.
 
 ## Drift observations (non-claim)
 
-- `skills/awesome-copilot/create-readme/SKILL.md` (#10): the local file lost its trailing
-  newline vs the pinned blob (a zero-content byte difference on the final step-6 line). It
-  does not affect the #10 claim and should be cleaned up opportunistically, but a byte-exact
-  artifact comparison during migration will trip on it.
+- `skills/awesome-copilot/create-readme/SKILL.md` (#10): the local file had lost its
+  trailing newline vs the pinned blob (a zero-content byte difference on the final step-6
+  line) — **fixed 2026-10-06**, the trailing newline restored, so a byte-exact artifact
+  comparison during migration now compares clean on this file.
 - No other file shows a claim-unrelated hunk. All 25 diff-assertion diffs contain exactly
   the lines their rows describe.
 - **Count reconciliation**: the manifest's 25 diff-asserted rows is one fewer than the
