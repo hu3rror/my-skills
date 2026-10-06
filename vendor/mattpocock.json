@@ -1,0 +1,14 @@
+{
+  "name": "mattpocock",
+  "repo": "mattpocock/skills",
+  "url": "https://github.com/mattpocock/skills.git",
+  "pin": "4588b32ecab9ecc9fc8cc6b6c5e7d675b6004b0d",
+  "releaseRepo": "mattpocock/skills",
+  "exclusions": [
+    { "path": "skills/in-progress", "reason": "beta category, not needed" },
+    { "path": "skills/misc", "reason": "uncurated one-offs, not needed" },
+    { "path": "skills/engineering/wizard", "reason": "not used by this maintainer" },
+    { "path": "skills/engineering/triage", "reason": "solo dev, no inbound issues to triage" },
+    { "path": "skills/productivity/to-questionnaire", "reason": "not used by this maintainer" }
+  ]
+}

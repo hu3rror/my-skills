@@ -21,7 +21,7 @@ The pipeline `npx skills add <aggregation repo> -a universal -s '*' -g` → cano
 _Avoid_: install (a single hop, not the chain)
 
 **Vendor sync**:
-The upstream leg of the skill flow, opposite the distribution chain: the script (`scripts/vendor-sync.mjs`) that pulls upstream skills into the aggregation repo's consolidated copies.
+The upstream leg of the skill flow, opposite the distribution chain: the script (`scripts/vendor-sync.mjs`) that pulls upstream skills into the aggregation repo's consolidated copies, and whose `merge` subcommand rebuilds the three-way merge for patched files upstream changed since their pinned base.
 _Avoid_: sync script (too generic)
 
 **Junction**:
@@ -33,7 +33,7 @@ An external skill source vendored into the repo (mattpocock/skills, yetone/kill-
 _Avoid_: source (too generic)
 
 **pi-specific skill**:
-A skill owned by this user's pi workflows (`npm-release`, `pi-extension-sync`); lives under `skills/self/` and must keep `disable-model-invocation: true` so other harnesses sharing the canonical store never auto-trigger it. Self-authored skills not owned by pi workflows are general-purpose (`de-slop`, `web-debug`, `consolidate-strays`, `setup-repo`, `write-release-notes`); model-invocation is allowed when the description is scoped tightly enough that other harnesses never fire it spuriously.
+A skill owned by this user's pi workflows (`npm-release`, `pi-extension-sync`); lives under `skills/self/` and must keep `disable-model-invocation: true` so other harnesses sharing the canonical store never auto-trigger it. Self-authored skills not owned by pi workflows are general-purpose (`de-slop`, `web-debug`, `my-skills-maintenance`, `setup-repo`, `write-release-notes`); model-invocation is allowed when the description is scoped tightly enough that other harnesses never fire it spuriously.
 _Avoid_: pi skill (drops the other-harness visibility consequence)
 
 ## Skill flows
@@ -63,15 +63,24 @@ A skill present in the canonical skills store that the distribution chain does n
 _Avoid_: orphan (reserved for unattributed upstream provenance), loose skill
 
 **Consolidation** (回收):
-The action of copying a stray skill into the aggregation repo — `skills/self/` for self-authored content, `skills/other/` while provenance is unknown — and, for a modified vendored skill, recording the deviation as a `PATCHES.md` row so vendor sync never overwrites it. Runs before the next distribution, never after.
+The action of copying a stray skill into the aggregation repo — `skills/self/` for self-authored content, `skills/other/` while provenance is unknown — and, for a modified vendored skill, recording the deviation as a per-patch record at `patches/<source>/` so vendor sync never overwrites it (record-first; the recovered edit goes live only after commit + push + a distribution run). Runs before the next distribution, never after.
 _Avoid_: write-back, sync back (imply a copy direction the store does not own)
 
 ## Patches
 
-**Patch manifest**:
-`PATCHES.md`, the record of every deviation from upstream (file, patch summary, upstream counterpart, verification method). The sync script skips listed files and reports them as manual-merge required only when upstream changed them since the pinned commit.
-_Avoid_: patch list, changelog
-
+**patch record** (补丁记录):
+A per-patch, machine-verified record of one deviation from upstream, at
+`patches/<source>/` (format: map ticket #22). Each carries frontmatter (`id`,
+`file`, `upstream`/`pin` resolved via `vendor/<source>.json`, `verification`,
+`after:` for stacked hunks) plus, for diff-verified records, the unified-diff
+hunks `scripts/verify-patch-records.mjs` re-applies to the pinned upstream
+blob and byte-compares to the local copy; behavioral records (self-authored,
+no upstream baseline) carry static asserts + a human re-run recipe instead.
+The `patches/**/*.md` glob is the manifest; the former `PATCHES.md` table's
+concerns were rehomed here and to `vendor/` / `docs/advisory-notes.md` at the
+map #18 migration.
+_Avoid_: patch list, changelog, patch file (a `.patch` artifact the repo does
+not ship)
 **Snapshot import**:
 The one-time act of importing the repo byte-identical from the canonical-store snapshot, which carried the four baseline patches into the repo as its baseline.
 _Avoid_: seeding, seed source (the gardening metaphor; import is the operation)
@@ -83,4 +92,10 @@ A patch carried into the repo by the snapshot import (four: research/wayfinder p
 A must-fix platform patch applied to a consolidated copy (three: diagnosing-bugs, npm-release temp path, GitLab tracker quoting).
 
 **B-class advisory note**:
-A conditional environment issue recorded in the patch manifest, not patched into the skill body (four: jq, curl alias, rg, web-debug bash phrasing).
+A conditional environment issue recorded in `docs/advisory-notes.md`, not patched into the skill body (four: jq, curl alias, rg, web-debug bash phrasing).
+
+## Maintenance budget
+
+**Maintenance budget** (维护成本预算):
+The measurable upper bound on the redesign's maintenance machinery (map #18 / ticket #27): scripts code + tests stay within the measured baseline, CI jobs are not increased, and common-case per-operation steps only decrease — vendor sync and local skill edit each one command + one check. The measured numbers and the bump rule live in `docs/maintenance-budget.md`, enforced by `scripts/maintenance-budget.test.mjs` in the existing script-tests job (ADR-0007); raising a bound is a deliberate act recorded there.
+_Avoid_: complexity budget (narrower — the size sub-limit only), cost ceiling (unmeasured)

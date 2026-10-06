@@ -1,8 +1,11 @@
-# Script tests: runs the repo's node:test fixture suite on every push. The
-# scripts have no other guardrail — this job is the point. Command spelled as
+# Script tests: runs the repo's node:test fixture suite — and the patch-record
+# verifier (map #18: machine-verified records) — on every push. The scripts
+# have no other guardrail — this job is the point. Command spelled as
 # a shell-expanded glob, not `node --test scripts/`: the directory argument is
 # broken on the CI Node 22 line (treated as a module require), while the glob
-# works on 22 and 26 alike.
+# works on 22 and 26 alike. The fixtures glob already picks up
+# verify-patch-records.test.mjs; the verifier step runs the live records
+# (it clones upstream at the pins — needs git + network).
 name: script-tests
 
 on:
@@ -25,3 +28,6 @@ jobs:
 
       - name: Run script tests
         run: node --test scripts/*.test.mjs
+
+      - name: Verify patch records
+        run: node scripts/verify-patch-records.mjs

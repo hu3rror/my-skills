@@ -13,7 +13,7 @@ decided the one-run entry is a self-authored thin orchestrator
 (`skills/self/setup-repo`, `disable-model-invocation: true`) that delegates to
 the two setup primitives in order, pre-filling the standard answers and asking
 only when exploration evidence contradicts a default. The vendored router
-`ask-matt` gets its Precondition patched (PATCHES.md A-class) to point at the
+`ask-matt` gets its Precondition patched (a patch record) to point at the
 composite.
 
 **Considered Options**: fold the coding-standards init into the vendored
@@ -27,7 +27,7 @@ absorbs both primitives' content (rejected: creates a second home for the
 vendored flow content that diverges on upstream updates).
 
 **Consequences**: the vendored `ask-matt` now references a self/ skill —
-cross-tree coupling, mitigated by the PATCHES.md row and the GLOSSARY.md
+cross-tree coupling, mitigated by the patch record and the GLOSSARY.md
 "Repo setup" term so the reference cannot rot silently; `ask-matt` joins the
 patched-file set, adding manual-merge flags whenever upstream churns it (it is
 the most frequently-changing file in the collection — the dominant recurring

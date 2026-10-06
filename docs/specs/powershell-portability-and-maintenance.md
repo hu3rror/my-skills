@@ -28,7 +28,7 @@ Consolidate every shared skill into the self-owned aggregation repository
 `hu3rror/my-skills`, organized by upstream
 source into folders, imported from the current `~/.agents/skills` snapshot (which
 already contains 4 deliberate local patches), fix the PowerShell conflicts in
-the consolidated copies, record every patch in a `PATCHES.md` manifest, and add
+the consolidated copies, record every patch in a machine-verified per-patch record under `patches/`, and add
 a lightweight upstream-sync mechanism that skips patched files and flags them
 for manual merge. Windows-side, move the two pi-specific skills
 (`npm-release`, `pi-extension-sync`) out of `~/.pi` into the aggregation repo,
@@ -68,11 +68,11 @@ read directly — no per-agent links.
    `~/.agents/skills` snapshot, so that the 4 existing local patches
    (research/wayfinder push notes, GitHub `"@me"` quoting, kill-ai-slop
    `disable-model-invocation`) are preserved as the baseline.
-9. As the maintainer, I want a `PATCHES.md` manifest listing every patch
+9. As the maintainer, I want every patch recorded as a machine-verified per-patch record under `patches/`
    (file / patch summary / upstream counterpart / verification method), so that
    no local adaptation is lost on the next upstream sync.
 10. As the maintainer, I want the upstream-sync mechanism to skip files listed
-    in `PATCHES.md` and report "upstream updated a patched file — merge
+    in the patch records and report "upstream updated a patched file — merge
     manually", so that automation never silently overwrites a local patch.
 11. As the maintainer, I want the sync runnable as a manually-triggered GitHub
     Actions workflow (no scheduled cron initially), matching the observed
@@ -95,7 +95,7 @@ read directly — no per-agent links.
 16. As the maintainer, I want the conditional (B-class) issues — jq dependency
     in `npm-release`, `curl` alias semantics in `diagnosing-bugs`, `rg` in
     `kill-ai-slop` references, the `bash` phrasing in `web-debug` — recorded in
-    `PATCHES.md` as advisory notes, not patched into skill bodies, so that
+    `docs/advisory-notes.md` as advisory notes, not patched into skill bodies, so that
     upstream diffs stay minimal.
 17. As a WSL pi user, I want the fixes to never remove bash-first behavior, so
     that the WSL instance (which uses bash natively) is unaffected.
@@ -116,12 +116,12 @@ read directly — no per-agent links.
 - **Baseline**: import from the current `~/.agents/skills` snapshot (not from
   upstream), because it already carries the 4 deliberate patches.
 - **Patch strategy**: patches live directly in the repository's skill files
-  (fork semantics); `PATCHES.md` is the source of truth for what is patched.
+  (fork semantics); the per-patch records at `patches/<source>/` are the source of truth for what is patched.
   Sync automation reads it to skip-and-flag. No `.patch` files, no post-apply
   step — the repo contains the patched artifacts the agents actually run.
 - **Sync mechanism**: a small vendor script (Node or PowerShell, runnable
   locally and in CI) that shallow-clones each upstream, syncs into
-  `skills/<source>/...`, skips `PATCHES.md`-listed files (reporting them as
+  `skills/<source>/...`, skips the patch-record `file:` set (reporting them as
   manual-merge required), and emits a summary. Wrapped in a manually-triggered
   GitHub Actions workflow.
 - **Must-fix patches (A-class)**, applied to the consolidated copies:
@@ -130,12 +130,12 @@ read directly — no per-agent links.
      Script structure untouched; no `.ps1` duplicate implementation.
   2. `diagnosing-bugs`: same Windows runtime note for the HITL template; the
      "Curl / HTTP script" wording stays but the PowerShell-alias caveat goes to
-     `PATCHES.md`.
+     the per-patch records at `patches/`.
   3. `npm-release`: temp file path `/tmp/...` → `$env:TEMP\...`.
   4. `setup-matt-pocock-skills` GitLab template: `--assignee "@me"` quoted +
      PowerShell splatting warning (mirror the GitHub template); heredoc
      instruction replaced with a PowerShell-friendly multi-line approach.
-- **Advisory-only (B-class)**, recorded in `PATCHES.md`, not patched into
+- **Advisory-only (B-class)**, recorded in `docs/advisory-notes.md`, not patched into
   bodies: jq availability for `gh --json` pipelines, `curl` alias semantics on
   PS 5.1 vs `curl.exe` on PS 7, `rg` not installed by default on Windows,
   `web-debug`'s "run it with `bash`" line.
@@ -148,7 +148,7 @@ read directly — no per-agent links.
   "本机 shell 是 Windows PowerShell（5.1/7），WSL 里的 pi 才用 bash；执行
   skill/文档中的 bash 或 Unix 命令前先转译为 PowerShell 等效；bash 专属脚本
   经 `bash.exe`/`wsl.exe` 显式调用；平台差异清单以 my-skills 仓库
-  `PATCHES.md` 为准。"
+  逐补丁记录（`patches/`）为准。"
 
 ## Testing Decisions
 
@@ -164,7 +164,7 @@ read directly — no per-agent links.
     `gh release create --notes-file "$env:TEMP\..."` runs; `glab issue update
     <n> --assignee "@me"` (dry-run/help-level) does not hit the splatting
     error; `npm-stage` doc commands unchanged.
-  - Patch manifest: every entry in `PATCHES.md` maps to a real file in the
+  - Patch record: every `file:` in the per-patch records maps to a real file in the
     repo; diff against upstream shows exactly the documented patch lines.
 - **Prior art**: the existing `@me` fix in
   `setup-matt-pocock-skills/issue-tracker-github.md` and the `Select-String`
@@ -235,12 +235,12 @@ read directly — no per-agent links.
   `- **执行环境**：本机 shell 是 Windows PowerShell（5.1/7），WSL 里的 pi 才用
   bash。执行 skill/文档中的 bash 或 Unix 命令前，先转译为 PowerShell 等效；
   bash 专属脚本（wizard、hitl-loop 模板等）经 bash.exe/wsl.exe 显式调用，不设
-  默认工具。平台差异清单以 my-skills 仓库 PATCHES.md 为准。`
+  默认工具。平台差异清单以 my-skills 仓库的逐补丁记录（patches/）为准。`
 
 ## Chinese Summary (non-authoritative)
 
-- 决策：全部公共技能并入自建聚合仓库 hu3rror/my-skills，按来源分目录，以本机快照为基线；修复 4 处 PowerShell 冲突，补丁全部记入 PATCHES.md。
+- 决策：全部公共技能并入自建聚合仓库 hu3rror/my-skills，按来源分目录，以本机快照为基线；修复 4 处 PowerShell 冲突，补丁全部记入 patches/ 下的逐补丁记录。
 - 理由：vercel-labs/skills 无补丁层，直接改 ~/.agents/skills 会被 npx skills update 覆盖；聚合仓库 + 补丁清单是可持续的维护形态。
 - 影响：分发链只写 canonical ~/.agents/skills（-a universal，不再建 pi junction）；npm-release/pi-extension-sync 迁出 ~/.pi 进 skills/self/；AGENTS.md 第 2 节融入 PowerShell 执行环境约束。
-- 风险：同步脚本若未按 PATCHES.md 跳过补丁文件会覆盖本地适配（已设计 skip+提醒）；security-audit 来源未溯源（暂归 other/）。
+- 风险：同步脚本若未按补丁记录跳过补丁文件会覆盖本地适配（已设计 skip+提醒）；security-audit 来源未溯源（暂归 other/）。
 - 待定：上游同步 workflow 先手动触发，不设定时（2026-09-22 修订：检测半块改为每日 cron 的 vendor freshness check，只 dry-run + pending-update issue，不写文件；真实 sync 仍手动）；B 类条件性问题只入备忘不改正文。
