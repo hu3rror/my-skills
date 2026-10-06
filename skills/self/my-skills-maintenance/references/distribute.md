@@ -34,9 +34,24 @@ spot-check `~/.agents/skills`; after a content change, the lock's
 
 Deleting it from the repo is not enough: `npx skills add` does **not** prune the
 canonical store (deleted-skill cleanup lives in `update`). Retire = `git rm` the
-repo copy **and** `npx skills remove <name>` on the store side (re-verify the
-exact `remove` invocation at the time, per CLI churn). Store writes wait on the
-user's go-ahead (AGENTS.md).
+repo copy **and** `npx skills remove <name>` on the store side. Store writes wait
+on the user's go-ahead (AGENTS.md).
+
+**Verify the invocation before running it** — this CLI churns and its
+non-interactive path fails silently: without the global scope flag, `remove`
+reports "No skills found to remove" and exits 0 (observed). Check
+`npx skills@<pinned> remove --help` for the current flag shape first; the
+canonical store needs the global scope (`-g`, non-interactive `-y`).
+
+## 5. Full store reset (clean reinstall from the repo)
+
+For a drifted or suspect store:
+
+1. Snapshot the current store (`npx skills ls` / `ls ~/.agents/skills`).
+2. Remove everything: `npx skills@<pinned> remove -g --all -y`.
+3. Re-add from the repo with the pinned CLI (section 2).
+4. Verify: new store = snapshot minus retirements, and the stray dry-run reads
+   `0 new stray, 0 modified stray`.
 
 ## Cross-branch touch
 
