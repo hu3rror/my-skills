@@ -10,9 +10,14 @@
 // the metering must not break it to enforce it).
 //
 // Baselines measured at commit 7c0c3a4 (docs/maintenance-budget.md):
+// Baselines measured at commit 7c0c3a4 (docs/maintenance-budget.md):
 //   - scripts code + tests: 3059 lines (the 2350 cited in #27 was the
-//     charting-day measure at 8bdc964; the +709 delta is the already-landed
-//     #23 rehoming and #24 merge-subcommand prep — part of the new mechanism);
+//     charting-day draft at 8bdc964; the +709 delta is the already-landed
+//     #23 rework and #24 merge-subcommand prep — part of the new mechanism).
+//     At the map #18 migration the budget deliberately grew to 4101: the new
+//     patch-record verifier + tests (verify-patch-records.{mjs,.test.mjs})
+//     and the consolidate-strays row-template→record-pointer change landed
+//     inside the total (docs/maintenance-budget.md records date + reason).
 //   - CI jobs: 3, one per workflow (script-tests, vendor-freshness-check,
 //     vendor-sync); #25 drops vendor-sync.yml at migration, so the
 //     post-migration surface is 2. The budget anchors at today's count.
@@ -33,7 +38,7 @@ import { fileURLToPath } from "node:url";
 const SCRIPTS = dirname(fileURLToPath(import.meta.url));
 const WORKFLOWS = join(SCRIPTS, "..", ".github", "workflows");
 
-const CODE_TESTS_BUDGET = 3059;
+const CODE_TESTS_BUDGET = 4101;
 const JOBS_BUDGET = 3;
 
 // wc -l parity: count newlines, not split chunks, so the number matches the

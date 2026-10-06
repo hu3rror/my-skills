@@ -1,6 +1,6 @@
 // Fixture-based tests for scripts/consolidate-strays.mjs: dry-run
 // classification report, explicit apply, and the modified-stray diff report
-// with patch-manifest row templates. Offline and deterministic: fake store,
+// with a per-patch-record pointer for modified strays. Offline and deterministic: fake store,
 // fake lock file, fake repo layout in temp
 // directories. Asserts external behavior (classification, report output,
 // copied files, untouched store, idempotent re-runs) via the Node built-in
@@ -598,7 +598,7 @@ test("CLI apply errors on a modified stray and on an invalid --to value", () => 
   }
 });
 
-// --- modified stray recovery: diff report + patch-manifest row --------------
+// --- modified stray recovery: diff report + per-patch-record pointer -------
 
 test("a modified stray prints a diff summary of the store content versus the consolidated copy", () => {
   const d = fixture();
@@ -624,7 +624,7 @@ test("a modified stray prints a diff summary of the store content versus the con
   }
 });
 
-test("the report includes a patch-manifest row template for each changed file", () => {
+test("a modified store reports a per-patch-record pointer, not a PATCHES.md row", () => {
   const d = fixture();
   try {
     makeTree(d.store, {
@@ -639,21 +639,22 @@ test("the report includes a patch-manifest row template for each changed file", 
       lock: d.lock,
       repo: d.repo,
     });
-    assert.match(report, /Patch-manifest row templates/);
-    assert.match(
-      report,
-      /\| <next #> \| new \| `skills\/tracked\/SKILL\.md` \| <patch summary: see diff above> \| <upstream counterpart> \| <verification method> \|/
-    );
-    assert.match(
-      report,
-      /\| <next #> \| new \| `skills\/tracked\/refs\/notes\.md` \| <patch summary: see diff above> \| <upstream counterpart> \| <verification method> \|/
-    );
+    // record-first: the deviation is written as a per-patch record before the copy changes
+    assert.match(report, /Record this deviation as a per-patch record/);
+    assert.match(report, /patches\/<source>\//);
+    assert.match(report, /verify-patch-records\.mjs passes/);
+    // every changed file still surfaces in the diff summary (the record's material)
+    assert.match(report, /SKILL\.md: 1 line added, 1 line removed/);
+    assert.match(report, /refs\/notes\.md: added in store/);
+    // the retired row-template mechanism must never appear
+    assert.doesNotMatch(report, /Patch-manifest row templates/);
+    assert.doesNotMatch(report, /<next #>/);
   } finally {
     rmSync(d.root, { recursive: true, force: true });
   }
 });
 
-test("a skill whose content matches its consolidated copy gets no diff and no row template", () => {
+test("a skill whose content matches its consolidated copy gets no diff and no record pointer", () => {
   const d = fixture();
   try {
     makeTree(d.store, { "tracked/SKILL.md": "same" });
@@ -665,7 +666,7 @@ test("a skill whose content matches its consolidated copy gets no diff and no ro
       lock: d.lock,
       repo: d.repo,
     });
-    assert.doesNotMatch(report, /Diff summary|Patch-manifest row/);
+    assert.doesNotMatch(report, /Diff summary|Record this deviation/);
   } finally {
     rmSync(d.root, { recursive: true, force: true });
   }
@@ -689,7 +690,7 @@ test("a store file differing only in a trailing newline is current, not reported
       repo: d.repo,
     });
     assert.equal(classified.find((c) => c.name === "tracked").kind, "current");
-    assert.doesNotMatch(report, /Diff summary|Patch-manifest row/);
+    assert.doesNotMatch(report, /Diff summary|Record this deviation/);
   } finally {
     rmSync(d.root, { recursive: true, force: true });
   }
@@ -814,7 +815,7 @@ test("diffDirectories reports a store-only binary file without line ops", () => 
   }
 });
 
-test("CLI dry-run reports a modified stray with a diff and a row template, touching nothing", () => {
+test("CLI dry-run reports a modified stray with a diff and a record pointer, touching nothing", () => {
   const d = fixture();
   try {
     makeTree(d.store, { "tracked/SKILL.md": "locally edited" });
@@ -833,10 +834,8 @@ test("CLI dry-run reports a modified stray with a diff and a row template, touch
     assert.match(res.stdout, /Diff summary \(store vs consolidated copy\):/);
     assert.match(res.stdout, /- original/);
     assert.match(res.stdout, /\+ locally edited/);
-    assert.match(
-      res.stdout,
-      /\| <next #> \| new \| `skills\/tracked\/SKILL\.md` \| <patch summary: see diff above> \| <upstream counterpart> \| <verification method> \|/
-    );
+    assert.match(res.stdout, /Record this deviation as a per-patch record/);
+    assert.doesNotMatch(res.stdout, /Patch-manifest row templates/);
     assert.deepEqual(snapshot(d.repo), repoBefore);
     assert.deepEqual(snapshot(d.store), storeBefore);
   } finally {

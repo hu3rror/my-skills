@@ -172,10 +172,10 @@ function buildBody(s) {
   }
   lines.push("## What to do");
   lines.push("");
-  lines.push("1. Fast path: invoke the `my-skills-vendor-sync` skill (`/my-skills-vendor-sync`) to drive this whole list");
+  lines.push("1. Fast path: invoke `my-skills-maintenance` (vendor-sync branch) to drive this whole list");
   lines.push("2. Preview: `node scripts/vendor-sync.mjs --dry-run`");
   lines.push("3. Sync: `node scripts/vendor-sync.mjs`, then review the diff");
-  lines.push("4. Patched files are never overwritten by sync — merge them manually");
+  lines.push("4. Patched files are never overwritten by sync — merge them manually (patch-record verifier re-derives them)");
   lines.push("5. Commit & push; this issue closes automatically once the copies are current");
   return lines.join("\n");
 }

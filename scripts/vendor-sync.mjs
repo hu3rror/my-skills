@@ -3,7 +3,8 @@
 //
 // Why this exists: `npx skills update` re-downloads from upstream and silently
 // discards local patches. This repo ships the patched artifacts, so sync must
-// never overwrite files listed in PATCHES.md — those are skipped and flagged
+// never overwrite files listed in the patch records at patches/ — those are
+// skipped and flagged
 // for a manual merge instead.
 
 import { spawnSync } from "node:child_process";
@@ -22,7 +23,7 @@ import os from "node:os";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const PATCHES_PATH = join(ROOT, "PATCHES.md");
+const PATCHES_DIR = join(ROOT, "patches");
 const VENDOR_DIR = join(ROOT, "vendor");
 const DRY_RUN = process.argv.includes("--dry-run");
 
@@ -66,17 +67,18 @@ function main() {
   else syncMain();
 }
 
-// Shared manifest load + guard for both modes. An empty skip set or an A-class
-// row that fails to parse into a real file path (e.g. the table gains a
-// column) would silently shrink the set this mechanism exists to protect —
-// refuse rather than risk an overwrite.
+// Shared manifest load + guard for both modes. An empty skip set or a patch
+// record that fails to parse into a real file path would silently shrink the
+// set this mechanism exists to protect — refuse rather than risk an overwrite.
 //
-// Pins and exclusions moved out of PATCHES.md's tables into per-source meta
-// (`vendor/<name>.json`, map ticket #23): pins keyed by repo, exclusions as
-// upstream-repo-relative path lists; url/repo/releaseRepo land on the source
-// config for cloning and the freshness summary. A missing or invalid meta
-// throws here (see loadSourceMeta) — a silently dropped pin or exclusion
-// would unprotect a patch, so the script refuses to run instead.
+// Pins and exclusions live in per-source meta (`vendor/<name>.json`, map
+// ticket #23): pins keyed by repo, exclusions as upstream-repo-relative path
+// lists; url/repo/releaseRepo land on the source config for cloning and the
+// freshness summary. A missing or invalid meta throws here (see
+// loadSourceMeta) — a silently dropped pin or exclusion would unprotect a
+// patch, so the script refuses to run instead. The patched-file skip set comes
+// from the per-patch records at `patches/<source>/` (the patches/**/*.md glob
+// is the manifest, map ticket #22; PATCHES.md was deleted at the migration).
 function loadManifest(mode) {
   const patchedSet = parsePatchedFiles();
   const pins = new Map();
@@ -93,14 +95,14 @@ function loadManifest(mode) {
   }
   if (patchedSet.size === 0) {
     console.error(
-      `PATCHES.md: no A-class patched files found. Refusing to ${mode} — proceeding would risk overwriting local patches.`,
+      `patches/: no patch records found. Refusing to ${mode} — proceeding would risk overwriting local patches.`,
     );
     process.exit(1);
   }
   const missing = [...patchedSet].filter((file) => !existsSync(toAbs(file)));
   if (missing.length > 0) {
     console.error(
-      `PATCHES.md: ${missing.length} A-class file(s) listed but not present in the repo: ${missing.join(", ")}. Refusing to ${mode}.`,
+      `patches/: ${missing.length} patch record(s) target file(s) not present in the repo: ${missing.join(", ")}. Refusing to ${mode}.`,
     );
     process.exit(1);
   }
@@ -109,7 +111,7 @@ function loadManifest(mode) {
 
 function syncMain() {
   const { patchedSet, pins, excludedRoots } = loadManifest("sync");
-  console.log(`Patched files listed in PATCHES.md: ${patchedSet.size}`);
+  console.log(`Patched files in patch records: ${patchedSet.size}`);
   if (DRY_RUN) {
     console.log("Dry run: reporting only, no files will be written or deleted.");
   }
@@ -235,8 +237,10 @@ function enumerateManaged(source, excludedRoots, cloneDir) {
 // files' diff baseline) — the setup both sync and merge need. Returns the temp
 // dir the caller must clean up, the clone dir, the pin, whether it landed, and
 // an error string when the clone itself failed. Callers print their own
-// "pin unfetchable" note — the two modes fall back differently.
-function cloneAndFetchPin(source, pins) {
+// "pin unfetchable" note — the two modes fall back differently. Exported for
+// verify-patch-records.mjs, which reconstructs record hunks from the same
+// pinned blobs.
+export function cloneAndFetchPin(source, pins) {
   const tmp = mkdtempSync(join(os.tmpdir(), "my-skills-vendor-"));
   const cloneDir = join(tmp, source.name);
   const clone = spawnSync(
@@ -308,7 +312,7 @@ function syncSource(source, patchedSet, pins, excludedRoots) {
     }
 
     // Report files upstream no longer ships; never delete them. Deleting a
-    // local-only file would silently clobber content PATCHES.md cannot protect
+    // local-only file would silently clobber content the patch records cannot protect
     // (it only tracks patches of upstream files). The maintainer reviews and
     // removes these manually.
     const targetRootAbs = toAbs(source.targetRoot);
@@ -373,20 +377,44 @@ function walkFiles(dir, base = dir) {
   return out;
 }
 
-// Extract the repo-relative file paths from PATCHES.md's A-class table (column
-// "File (repo-relative)"). These are the files sync must never overwrite.
+// Extract the repo-relative file paths from the patch records at patches/
+// (one record per upstream deviation, format map ticket #22): the `file:`
+// frontmatter of every patches/**/*.md except patches/README.md. These are the
+// files sync must never overwrite. A record without a parseable `file:` refuses
+// to run — a silently dropped path would unprotect a patch (the same guard the
+// old PATCHES.md table had).
 function parsePatchedFiles() {
-  // Column index of "File (repo-relative)" in the A-class table.
-  const FILE_COLUMN = 3;
   const files = new Set();
-  parseSectionTable(readFileSync(PATCHES_PATH, "utf8"), "## A-class", (cells) => {
-    if (cells.length <= FILE_COLUMN) return;
-    const file = cells[FILE_COLUMN] || "";
-    if (file && file !== "File (repo-relative)" && !/^-+$/.test(file)) {
-      files.add(file);
+  for (const abs of walkRecordFiles()) {
+    const text = readFileSync(abs, "utf8");
+    const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+    if (!m) {
+      console.error(`patches/: ${abs} has no frontmatter — refusing to run (a record without file: would unprotect a patch)`);
+      process.exit(1);
     }
-  });
+    const fm = m[1].match(/(?:^|\n)file:\s*(\S+)/);
+    if (!fm) {
+      console.error(`patches/: ${abs} has no file: field — refusing to run`);
+      process.exit(1);
+    }
+    files.add(fm[1]);
+  }
   return files;
+}
+
+// Recursively list the record files under patches/: every .md there is a patch
+// record except the directory's README.md (the format spec, no frontmatter).
+function walkRecordFiles() {
+  const out = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, entry.name);
+      if (entry.isDirectory()) walk(p);
+      else if (entry.isFile() && entry.name.endsWith(".md") && entry.name !== "README.md") out.push(p);
+    }
+  };
+  walk(PATCHES_DIR);
+  return out;
 }
 
 // Parse + validate one per-source meta file (vendor/<name>.json, map ticket
@@ -435,10 +463,12 @@ export function loadSourceMeta(name, dir = VENDOR_DIR) {
   return parseSourceMeta(readFileSync(abs, "utf8"), name);
 }
 
-// Scan one `## <heading>` table in PATCHES.md and call `row` for every data row
-// with the backtick-stripped, trimmed cells; header and separator rows are left
-// to the caller's row predicate to skip. A section runs until the next `## `
-// heading, so later sections never leak in; a missing section yields nothing.
+// Scan one `## <heading>` table in a Markdown doc and call `row` for every data
+// row with the backtick-stripped, trimmed cells; header and separator rows are
+// left to the caller's row predicate to skip. A section runs until the next
+// `## ` heading, so later sections never leak in; a missing section yields
+// nothing. (No longer used for the patched-file skip set — that comes from the
+// patch records now — but kept for any table-driven sections.)
 function parseSectionTable(text, heading, row) {
   let inSection = false;
   for (const line of text.split(/\r?\n/)) {
@@ -538,7 +568,7 @@ const MERGE_ATTENTION_VERDICTS = new Set(["conflict", "error", "reshaped", "adop
 
 function mergeMain() {
   const { patchedSet, pins, excludedRoots } = loadManifest("merge");
-  console.log(`Three-way merge of patched files (${patchedSet.size} patched files listed in PATCHES.md)`);
+  console.log(`Three-way merge of patched files (${patchedSet.size} patched files in patch records)`);
   if (DRY_RUN) console.log("Dry run: reporting only, no files will be written.");
 
   const results = [];
@@ -580,7 +610,7 @@ function mergeMain() {
         break;
       case "adopted":
         console.log(
-          `  [merge] ${item.path} — upstream adopted the local patch; copy already current; restate the PATCHES.md row`,
+          `  [merge] ${item.path} — upstream adopted the local patch; copy already current; restate the patch record`,
         );
         break;
       case "no-pin":
@@ -713,7 +743,9 @@ function mergeOne({ cloneDir, upstreamAbs, repoRel, root, pin, pinAvailable }, d
   }
 }
 
-function catFile(cloneDir, rev) {
+// Fetch one object from the clone (used for base/theirs blobs). Exported for
+// verify-patch-records.mjs, which reads the pinned blobs record hunks apply to.
+export function catFile(cloneDir, rev) {
   return spawnSync("git", ["-C", cloneDir, "cat-file", "blob", rev]);
 }
 

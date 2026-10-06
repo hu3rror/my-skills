@@ -33,6 +33,24 @@ parity, CRLF-robust):
 | `vendor-sync.test.mjs` | 230 | tests |
 | **Total** | **3059** | code 1571 + tests 1488 |
 
+### Migration re-measurement (2026-10-06)
+
+At the map #18 migration the 3059 baseline grew to **4101** (the guard's
+measured total). The delta is entirely the new mechanism the migration ships,
+already present in `scripts/`:
+
+| File | Line-count delta over 3059 | Role |
+|---|---|---|
+| `verify-patch-records.mjs` | 466 | code — the patch-record verifier (machine-verified records) |
+| `verify-patch-records.test.mjs` | 544 | tests — the verifier's offline suite |
+| `consolidate-strays.mjs` / `.test.mjs` | +1 / −1 → 566 / 845 | row-template block → per-patch-record pointer |
+| `vendor-sync.mjs` | +32 → 829 | skip-set reads records' `file:`; exports the verifier's clone/cat-file |
+
+This growth is deliberate and documented per the bump rule: the per-patch
+machine-verified record mechanism and its verifier are the point of the
+redesign, and this re-measured ceiling bounds them (code+tests **≤ 4101**, CI
+jobs budget unchanged).
+
 **Reconciliation with the 2350 cited in #27.** 2350 was the charting-day
 measure (commit `8bdc964`, 2026-10-06). The +709 delta is entirely
 already-landed new-mechanism prep, so the budget re-bases to today's measure
@@ -42,8 +60,10 @@ it replaces, including the prep that already serves it.
 - #23 rehoming (`c9715dd`): `vendor-sync.mjs` 482 → 797 (+315), `vendor-sync.test.mjs` 188 → 230 (+42);
 - #24 merge subcommand (`4db8749`): `vendor-sync-merge.test.mjs` (+352).
 
-**Budget rule**: total script lines (code + tests) ≤ **3059**. Bumping it is a
-deliberate, documented act (date + reason in this file and in the guard).
+**Budget rule**: total script lines (code + tests) ≤ **4101** (re-measured at
+the 2026-10-06 migration, formerly 3059 — see the re-measurement note above).
+Bumping it is a **deliberate, documented act** (date + reason here and in the
+guard).
 
 ### CI surface
 
@@ -69,7 +89,7 @@ Measured from today's skill procedures (`skills/self/my-skills-vendor-sync/`,
 | Operation | Today | #27 target |
 |---|---|---|
 | Upstream moved, no patched files touched (vendor sync) | 6 steps (read issue + dry-run → sync → classify/keep-or-drop → manual pin bump → tests + dry-run re-verify → propose commit/push/close) | **1 command + 1 check** — sync with the pin bump folded in, verified by a dry-run re-read (`changed=false`) |
-| Local skill edit (stray recovery) | 5 steps — 4+ per #27's framing (dry-run → decide adoption → PATCHES row + copy-back → re-run report → propose commit/push/distribute; the ticket's "edit store → dry-run → PATCHES row → copy → re-verify" counts the same procedure from the store edit) | **1 command + 1 check** — write the patch record, then one diff assertion verifies it |
+| Local skill edit (stray recovery) | 5 steps — 4+ per #27's framing (dry-run → decide adoption → pre-migration PATCHES row + copy-back → re-run report → propose commit/push/distribute; the ticket's "edit store → dry-run → PATCHES row → copy → re-verify" counts the same procedure from the store edit) | **1 command + 1 check** — write the patch record, then one diff assertion verifies it |
 
 **Budget rule**: per-operation step counts only decrease; the two common cases
 must be one command + one check. Step counts are a property of the skill
@@ -91,8 +111,8 @@ unified skill.
    the patch-record branch writes the per-patch record at
    `patches/<source>/` (#22 format) and the record-verify script asserts the
    diff in one step (the #26 capture lists `scripts/verify-patch-records.mjs`
-   wiring as an open item). The record file replaces today's PATCHES-table
-   row + copy-back + re-run-report loop.
+   wiring as an open item). The record file replaces the pre-migration
+   PATCHES-table row + copy-back + re-run-report loop.
 
 3. **Rare case — upstream touched a patched file (merge).** This is where the
    attention budget concentrates; it stays tooled/manual and is *not* the
@@ -101,9 +121,10 @@ unified skill.
    attention is needed (conflict / reshaped / adopted / no-pin / error), with
    the evidence kept in the reported temp dir. No budget is spent making it
    one-command; the budget spent is bounded (the subcommand already exists
-   and its tests are inside the 3059).
+   and its tests are inside the 4101 budget).
 
-4. **Complexity budget.** Code+tests ≤ 3059 lines, CI jobs ≤ 3 (2 after the
+4. **Complexity budget.** Code+tests ≤ 4101 lines (re-measured at migration),
+   CI jobs ≤ 3 (2 after the
    #25 drop), common-case step counts only decrease. Every rule above is
    either machine-enforced (guard test) or acceptance-traced at migration
    (step counts via #28). "Maintenance cost" is now a number that moves only

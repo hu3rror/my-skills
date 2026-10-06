@@ -3,7 +3,9 @@
 // skills store against the distribution chain's lock file and the aggregation
 // repo's consolidated copies (stray-skill consolidation spec): dry-run
 // classification report, explicit apply for new strays, and a diff report
-// with patch-manifest row templates for modified strays.
+// for modified strays — whose deviation is recorded as a per-patch record at
+// `patches/<source>/` before the copy changes (map #18; the spec's PATCHES.md
+// row template is superseded by the patch-record branch).
 //
 // Every skill found in the canonical store is classified as one of:
 //   - new stray:       absent from the lock file and not consolidated in the
@@ -18,9 +20,9 @@
 // --to self. The store copy stays in place; running apply again is a no-op.
 // Modified strays are report-only: apply never copies one — the dry-run
 // report prints a line-level diff summary of store content versus the
-// consolidated copy plus a PATCHES.md row template per changed file, so the
-// deviation can be recorded before the consolidated copy ever changes
-// (ADR-0002). All roots are parameterized with home-derived
+// consolidated copy, so the deviation can be recorded as a per-patch record
+// at `patches/<source>/` before the consolidated copy ever changes (ADR-0002;
+// the record-first order supersedes the retired PATCHES.md row template). All roots are parameterized with home-derived
 // defaults so fixtures drive
 // the same logic offline. Zero dependencies; runs under PowerShell and in WSL.
 
@@ -142,7 +144,7 @@ function toLines(buf) {
 // Line-level diff between two texts with an LCS alignment. "-" lines exist
 // only in the consolidated copy (removed by the local edit) and "+" lines
 // only in the store (added by it) — the orientation a maintainer reads
-// against a PATCHES.md patch summary like "+2 lines appended: ...". Skill
+// against a patch-record summary like "+2 lines appended: ...". Skill
 // files are small, so the O(m*n) DP table is fine for a manual diagnostic;
 // pathological sizes return null and the caller falls back to counts only.
 function diffLines(storeLines, copyLines) {
@@ -356,7 +358,7 @@ export function applyStray({ store, lock, repo, name, home = "other" }) {
   }
   if (skill.kind === "modified-stray") {
     throw new Error(
-      `"${name}" is a modified stray; apply only copies new strays, and modified-stray recovery is report-only until its patch-manifest row exists`
+      `"${name}" is a modified stray; apply only copies new strays, and modified-stray recovery is report-only until its deviation is recorded as a per-patch record at patches/<source>/ (patch-record branch)`
     );
   }
   const destination = toPortable(join("skills", home, name));
@@ -369,14 +371,14 @@ export function applyStray({ store, lock, repo, name, home = "other" }) {
 
 // --- report ---------------------------------------------------------------
 
-// Diff report and patch-manifest row templates for one modified stray.
-// This is the recovery surface for a modified stray: the maintainer reads the
-// diff to compose the PATCHES.md patch summary, fills the row template in,
+// Diff report for one modified stray (record-first pointer). This is the
+// recovery surface for a modified stray: the maintainer reads the diff to
+// compose a per-patch record at `patches/<source>/` (the patch-record branch),
 // and only then recovers the edit — the consolidated copy never changes before
-// its patch row exists, so vendor sync cannot overwrite the edit (ADR-0002).
-// A row template is emitted per changed file (ADR-0002: every patch entry must
-// map to a real file in the repo); the consolidated copy is not changing for
-// a file removed from the store, so that case gets no row.
+// its deviation is recorded, so vendor sync cannot overwrite the edit
+// (ADR-0002; the record replaces the retired PATCHES.md row template). The
+// consolidated copy is not changing for a file removed from the store, so that
+// case points at nothing to record.
 function modifiedStrayDetail(c, repo) {
   const copyDir = join(repo, c.destination);
   const diffs = diffDirectories(c.dir, copyDir);
@@ -397,22 +399,20 @@ function modifiedStrayDetail(c, repo) {
   }
   if (!existsSync(copyDir)) {
     lines.push(
-      "    (consolidated copy missing - no patch-manifest row applies; restore the copy before recovery)"
+      "    (consolidated copy missing - no patch record applies; restore the copy before recovery)"
     );
     return lines;
   }
-  const templates = [];
-  for (const e of diffs) {
-    if (e.status === "removed") continue;
-    templates.push(
-      `      | <next #> | new | \`${toPortable(join(c.destination, e.rel))}\` | <patch summary: see diff above> | <upstream counterpart> | <verification method> |`
-    );
-  }
-  if (templates.length > 0) {
+  // Files the store removed are left alone (the copy they target is not
+  // changing), so only the added/modified ones feed the record.
+  const recordable = diffs.filter((e) => e.status !== "removed");
+  if (recordable.length > 0) {
     lines.push(
-      "    Patch-manifest row templates (append as A-class rows in PATCHES.md, completing the placeholders):"
+      "    Record this deviation as a per-patch record at `patches/<source>/` BEFORE",
+      "    changing the consolidated copy (patch-record branch; the diff above is",
+      "    the record's summary / ## Diff material). Recovery is complete only after",
+      "    node scripts/verify-patch-records.mjs passes.",
     );
-    lines.push(...templates);
   }
   return lines;
 }
@@ -544,8 +544,9 @@ function usage() {
 
 Classifies every store skill as a new stray, a modified stray, or current and
 prints a dry-run report (read-only; nothing is written or modified). Modified
-strays are reported with a diff summary and a PATCHES.md row template — the
-script never copies one; its patch row must exist first (ADR-0002). With
+strays are reported with a diff summary — the script never copies one; its
+deviation must first be recorded as a per-patch record at patches/<source>/
+(ADR-0002, patch-record branch). With
 --apply, copies one new stray into the repo instead.
 
 Options:

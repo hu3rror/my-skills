@@ -17,7 +17,7 @@ the skill files, fork-style).
 | `skills/kill-ai-slop/<name>/` | [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop) | kill-ai-slop (upstream path is `skill/`; normalized to the source dir here) |
 | `skills/cloudflare/<name>/` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | security-audit (provenance traced; recorded in the local `~/.agents/.skill-lock.json`) |
 | `skills/awesome-copilot/<name>/` | [github/awesome-copilot](https://github.com/github/awesome-copilot) | create-readme (manual fork: remote README templates localized into `references/`; not in vendor-sync SOURCES, see `vendor/awesome-copilot.json`) |
-| `skills/self/<name>/` | self-authored | de-slop, web-debug, consolidate-strays (general-purpose; de-slop carries `disable-model-invocation: true`, explicit invocation only; consolidate-strays is model-invoked — its description is scoped to stray-consolidation requests and its default run is a read-only dry-run, so other harnesses never fire it spuriously); write-release-notes (general-purpose, model-invoked — description scoped to GitHub Release-notes requests, so other harnesses fire it only when release notes are being written); setup-repo (general-purpose, `disable-model-invocation: true` — one-run per-repo setup driving `setup-matt-pocock-skills` then `setup-coding-standards`, see ADR-0005); npm-release, pi-extension-sync (pi-specific, `disable-model-invocation: true`, so other harnesses never auto-trigger) |
+| `skills/self/<name>/` | self-authored | de-slop, web-debug, my-skills-maintenance (general-purpose; de-slop carries `disable-model-invocation: true`, explicit invocation only; my-skills-maintenance is model-invoked — one entry for the aggregation repo's maintenance flows, with a description scoped to repo-maintenance vocabulary and a read-only dry-run first step, so other harnesses never fire it spuriously); write-release-notes (general-purpose, model-invoked — description scoped to GitHub Release-notes requests, so other harnesses fire it only when release notes are being written); setup-repo (general-purpose, `disable-model-invocation: true` — one-run per-repo setup driving `setup-matt-pocock-skills` then `setup-coding-standards`, see ADR-0005); npm-release, pi-extension-sync (pi-specific, `disable-model-invocation: true`, so other harnesses never auto-trigger) |
 
 **Discovery depth rule**: the `vercel-labs/skills` CLI discovery constrains only
 the depth of skill directories (dirs containing `SKILL.md`): at most three
@@ -30,9 +30,10 @@ not depth-limited.
 
 The repo was imported byte-for-byte (105 files) from the current
 `~/.agents/skills` snapshot, so it carries the 4 baseline patches the snapshot
-already had. Every deviation from upstream — the baseline and new A-class
-patches — is recorded in
-[`PATCHES.md`](PATCHES.md) at the repo root; B-class environment notes live in
+already had. Every deviation from upstream — the baseline and later patches —
+is recorded as a per-patch record under
+[`patches/`](patches/) (outside `skills/`, so the distribution chain never
+distributes it); B-class environment notes live in
 [`docs/advisory-notes.md`](docs/advisory-notes.md) and per-source pins and
 exclusions in [`vendor/`](vendor/README.md) (`self/` skills are self-authored and
 have no upstream); upstream sourced files were verified file-by-file. The
@@ -73,7 +74,7 @@ the machine, which this repo does not want.
 # Dry run: report what would change and which patched files are skipped, write nothing
 node scripts/vendor-sync.mjs --dry-run
 
-# Real sync: shallow-clone each upstream into skills/<source>/, skipping PATCHES.md-listed files
+# Real sync: shallow-clone each upstream into skills/<source>/, skipping patch-record files
 node scripts/vendor-sync.mjs
 
 # Three-way merge patched files upstream changed (writes clean, patch-surviving merges;
@@ -81,7 +82,7 @@ node scripts/vendor-sync.mjs
 node scripts/vendor-sync.mjs merge
 ```
 
-Patched files (`PATCHES.md` A-class) are never overwritten; a patched file is
+Patched files (the patch records' `file:` set) are never overwritten; a patched file is
 reported as needing a merge only when upstream actually changed it since the
 pinned commit in `vendor/<source>.json`. The `merge`
 subcommand then rebuilds each such three-way merge (`git merge-file`, base =
@@ -89,9 +90,8 @@ the pinned commit) and writes the result only when the local patch survives
 mechanically — its changed lines identical — leaving conflicts, reshaped
 patches, adopted patches, and unpinnable bases to the maintainer. Files
 upstream removed are reported but not deleted; the maintainer runs `git rm` by
-hand. A manually-triggered GitHub Actions workflow (`vendor-sync`,
-`workflow_dispatch`, no cron) runs the script and prints its summary to the
-logs.
+hand. (The old `vendor-sync` GitHub Actions workflow was dropped at the map #18
+migration — the unified skill `my-skills-maintenance` is the repair entry.)
 
 A daily vendor freshness check (`.github/workflows/vendor-freshness-check.yml`,
 cron UTC 01:00 + manual dispatch) runs the dry-run and turns its result into a
@@ -100,9 +100,9 @@ has changes not yet vendored, closed again once the copies are current. It
 never modifies files; the real sync stays manual.
 
 Resolving a pending update — sync, three-way-merge patched files onto the new
-upstream, bump the pins, verify, commit/push/close — is
-`skills/self/my-skills-vendor-sync`, invoked by name
-(`/my-skills-vendor-sync`): it drives the whole
+upstream, bump the pins, record patches, verify, commit/push/close — is the
+`vendor-sync` branch of `skills/self/my-skills-maintenance` (the unified
+maintenance skill, invoked as `my-skills-maintenance`): it drives the whole
 loop, proposing the commit, push, and issue close for your go-ahead.
 
 ## Consolidate stray skills (before distributing)
@@ -117,13 +117,12 @@ edit — to recover what the chain does not track into the aggregation repo:
   `skills/self/<name>` when self-authored, `skills/other/<name>` while
   provenance is unknown;
 - a **modified stray** — a tracked skill whose store content differs from its
-  consolidated copy — is reported with a diff summary and a `PATCHES.md` row
-  template; the row must exist before the copy-back (ADR-0002), and
+  consolidated copy — is reported with a diff summary and a pointer to record
+  it as a per-patch record before the copy-back (record-first, ADR-0002);
   consolidation never copies a modified stray on its own.
 
-Say "consolidate stray skills" (`skills/self/consolidate-strays`, model-invoked
-with a description scoped to consolidation requests so other harnesses never
-fire it), or run the script directly:
+Say "consolidate stray skills" (`skills/self/my-skills-maintenance`, the
+stray-recovery branch), or run the script directly:
 
 ```bash
 node scripts/consolidate-strays.mjs             # dry-run report (default; read-only)
