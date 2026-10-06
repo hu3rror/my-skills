@@ -84,3 +84,9 @@ A must-fix platform patch applied to a consolidated copy (three: diagnosing-bugs
 
 **B-class advisory note**:
 A conditional environment issue recorded in `docs/advisory-notes.md`, not patched into the skill body (four: jq, curl alias, rg, web-debug bash phrasing).
+
+## Maintenance budget
+
+**Maintenance budget** (维护成本预算):
+The measurable upper bound on the redesign's maintenance machinery (map #18 / ticket #27): scripts code + tests stay within the measured baseline, CI jobs are not increased, and common-case per-operation steps only decrease — vendor sync and local skill edit each one command + one check. The measured numbers and the bump rule live in `docs/maintenance-budget.md`, enforced by `scripts/maintenance-budget.test.mjs` in the existing script-tests job (ADR-0007); raising a bound is a deliberate act recorded there.
+_Avoid_: complexity budget (narrower — the size sub-limit only), cost ceiling (unmeasured)
