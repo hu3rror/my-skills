@@ -21,7 +21,7 @@ The pipeline `npx skills add <aggregation repo> -a universal -s '*' -g` → cano
 _Avoid_: install (a single hop, not the chain)
 
 **Vendor sync**:
-The upstream leg of the skill flow, opposite the distribution chain: the script (`scripts/vendor-sync.mjs`) that pulls upstream skills into the aggregation repo's consolidated copies.
+The upstream leg of the skill flow, opposite the distribution chain: the script (`scripts/vendor-sync.mjs`) that pulls upstream skills into the aggregation repo's consolidated copies, and whose `merge` subcommand rebuilds the three-way merge for patched files upstream changed since their pinned base.
 _Avoid_: sync script (too generic)
 
 **Junction**:

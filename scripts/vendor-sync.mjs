@@ -15,6 +15,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  writeFileSync,
 } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import os from "node:os";
@@ -66,27 +67,36 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
 }
 
 function main() {
+  if (process.argv[2] === "merge") mergeMain();
+  else syncMain();
+}
+
+// Shared manifest load + guard for both modes. An empty skip set or an A-class
+// row that fails to parse into a real file path (e.g. the table gains a
+// column) would silently shrink the set this mechanism exists to protect —
+// refuse rather than risk an overwrite.
+function loadManifest(mode) {
   const patchedSet = parsePatchedFiles();
   const pins = parseUpstreamRefs();
   const excludedRoots = parseExcludedRoots();
   if (patchedSet.size === 0) {
     console.error(
-      "PATCHES.md: no A-class patched files found. Refusing to sync — proceeding would risk overwriting local patches.",
+      `PATCHES.md: no A-class patched files found. Refusing to ${mode} — proceeding would risk overwriting local patches.`,
     );
     process.exit(1);
   }
-
-  // Guard the skip set itself: an A-class row that fails to parse into a real
-  // file path (e.g. the table gains a column) would silently shrink the set
-  // this mechanism exists to protect. Refuse rather than risk an overwrite.
   const missing = [...patchedSet].filter((file) => !existsSync(toAbs(file)));
   if (missing.length > 0) {
     console.error(
-      `PATCHES.md: ${missing.length} A-class file(s) listed but not present in the repo: ${missing.join(", ")}. Refusing to sync.`,
+      `PATCHES.md: ${missing.length} A-class file(s) listed but not present in the repo: ${missing.join(", ")}. Refusing to ${mode}.`,
     );
     process.exit(1);
   }
+  return { patchedSet, pins, excludedRoots };
+}
 
+function syncMain() {
+  const { patchedSet, pins, excludedRoots } = loadManifest("sync");
   console.log(`Patched files listed in PATCHES.md: ${patchedSet.size}`);
   if (DRY_RUN) {
     console.log("Dry run: reporting only, no files will be written or deleted.");
@@ -196,8 +206,49 @@ function main() {
   process.exit(failed ? 1 : 0);
 }
 
-function syncSource(source, patchedSet, pins, excludedRoots) {
+// Enumerate every upstream skill file a source owns, mapped from its
+// repo-relative path to the absolute upstream path (shared by sync and merge).
+function enumerateManaged(source, excludedRoots, cloneDir) {
   const excluded = excludedRoots.get(source.repo) ?? [];
+  const managed = new Map(); // repoRelPath -> absolute upstream path
+  for (const { upstreamDir, targetRel } of source.skillRoots(cloneDir, excluded)) {
+    for (const rel of walkFiles(upstreamDir)) {
+      managed.set(`${targetRel}/${rel}`, join(upstreamDir, ...rel.split("/")));
+    }
+  }
+  return managed;
+}
+
+// Clone a source shallowly and fetch its pinned base commit (the patched
+// files' diff baseline) — the setup both sync and merge need. Returns the temp
+// dir the caller must clean up, the clone dir, the pin, whether it landed, and
+// an error string when the clone itself failed. Callers print their own
+// "pin unfetchable" note — the two modes fall back differently.
+function cloneAndFetchPin(source, pins) {
+  const tmp = mkdtempSync(join(os.tmpdir(), "my-skills-vendor-"));
+  const cloneDir = join(tmp, source.name);
+  const clone = spawnSync(
+    "git",
+    ["clone", "--depth", "1", "--quiet", source.url, cloneDir],
+    { encoding: "utf8" },
+  );
+  if (clone.status !== 0) {
+    return { tmp, cloneDir, error: `${source.name}: clone failed: ${(clone.stderr || "").trim()}` };
+  }
+  const pin = pins.get(source.repo);
+  let pinAvailable = false;
+  if (pin) {
+    const fetched = spawnSync(
+      "git",
+      ["-C", cloneDir, "fetch", "--depth", "1", "--quiet", "origin", pin],
+      { encoding: "utf8" },
+    );
+    pinAvailable = fetched.status === 0;
+  }
+  return { tmp, cloneDir, pin, pinAvailable };
+}
+
+function syncSource(source, patchedSet, pins, excludedRoots) {
   const r = {
     added: [],
     updated: [],
@@ -206,47 +257,19 @@ function syncSource(source, patchedSet, pins, excludedRoots) {
     patched: [],
     errors: [],
   };
-  const tmp = mkdtempSync(join(os.tmpdir(), "my-skills-vendor-"));
-  const cloneDir = join(tmp, source.name);
-  try {
-    const clone = spawnSync(
-      "git",
-      ["clone", "--depth", "1", "--quiet", source.url, cloneDir],
-      { encoding: "utf8" },
+  const { tmp, cloneDir, pin, pinAvailable, error } = cloneAndFetchPin(source, pins);
+  if (error) {
+    r.errors.push(error);
+    return r;
+  }
+  if (!pinAvailable && pin) {
+    console.error(
+      `  note: pinned commit ${pin} not fetchable for ${source.name} — patched files treated as pending (old semantics)`,
     );
-    if (clone.status !== 0) {
-      r.errors.push(`${source.name}: clone failed: ${(clone.stderr || "").trim()}`);
-      return r;
-    }
-
-    // Fetch the source's pinned commit (the patched files' diff baseline) so a
-    // patched file can be told "upstream changed it" (manual merge pending)
-    // from "our patch makes it differ" (current). An unfetchable pin
-    // (force-push / GC upstream) falls back to the old local-vs-HEAD test,
-    // which over-reports pending work but never hides a real change.
-    const pin = pins.get(source.repo);
-    let pinAvailable = false;
-    if (pin) {
-      const fetched = spawnSync(
-        "git",
-        ["-C", cloneDir, "fetch", "--depth", "1", "--quiet", "origin", pin],
-        { encoding: "utf8" },
-      );
-      pinAvailable = fetched.status === 0;
-      if (!pinAvailable) {
-        console.error(
-          `  note: pinned commit ${pin} not fetchable for ${source.name} — patched files treated as pending (old semantics)`,
-        );
-      }
-    }
-
+  }
+  try {
     // Enumerate every upstream skill file, mapped to its repo-relative path.
-    const managed = new Map(); // repoRelPath -> absolute upstream path
-    for (const { upstreamDir, targetRel } of source.skillRoots(cloneDir, excluded)) {
-      for (const rel of walkFiles(upstreamDir)) {
-        managed.set(`${targetRel}/${rel}`, join(upstreamDir, ...rel.split("/")));
-      }
-    }
+    const managed = enumerateManaged(source, excludedRoots, cloneDir);
 
     for (const [repoRel, upstreamAbs] of managed) {
       if (patchedSet.has(repoRel)) {
@@ -440,13 +463,13 @@ function patchedStatus(item) {
 // Per-file "did upstream move this patched file since the pinned base?".
 // Compares blobs (raw bytes, LF-normalized) so checkout line-ending
 // translation in the clone cannot cause false pending reports.
-function patchedDiffers(cloneDir, upstreamAbs, repoRel, pin, pinAvailable) {
-  if (!pinAvailable || !pin) return filesDifferBlob(cloneDir, upstreamAbs, repoRel);
+function patchedDiffers(cloneDir, upstreamAbs, repoRel, pin, pinAvailable, root = ROOT) {
+  if (!pinAvailable || !pin) return filesDifferBlob(cloneDir, upstreamAbs, repoRel, root);
   const rel = relative(cloneDir, upstreamAbs).split(sep).join("/");
   const base = spawnSync("git", ["-C", cloneDir, "cat-file", "blob", `${pin}:${rel}`]);
-  if (base.status !== 0) return filesDifferBlob(cloneDir, upstreamAbs, repoRel);
+  if (base.status !== 0) return filesDifferBlob(cloneDir, upstreamAbs, repoRel, root);
   const head = spawnSync("git", ["-C", cloneDir, "cat-file", "blob", `HEAD:${rel}`]);
-  if (head.status !== 0) return filesDifferBlob(cloneDir, upstreamAbs, repoRel);
+  if (head.status !== 0) return filesDifferBlob(cloneDir, upstreamAbs, repoRel, root);
   // Both blobs are present here, so `localDiffers` never participates in the
   // verdict — pass false instead of re-running a comparison the classifier
   // ignores.
@@ -458,14 +481,14 @@ function patchedDiffers(cloneDir, upstreamAbs, repoRel, pin, pinAvailable) {
 // let the clone's checkout line-ending translation (an upstream .gitattributes)
 // report every patched file as differing on Windows clones — the same false
 // alarm the blob comparison exists to avoid.
-function filesDifferBlob(cloneDir, upstreamAbs, repoRel) {
+function filesDifferBlob(cloneDir, upstreamAbs, repoRel, root = ROOT) {
   const rel = relative(cloneDir, upstreamAbs).split(sep).join("/");
   const head = spawnSync("git", ["-C", cloneDir, "cat-file", "blob", `HEAD:${rel}`]);
-  if (head.status !== 0) return filesDiffer(upstreamAbs, toAbs(repoRel));
+  if (head.status !== 0) return filesDiffer(upstreamAbs, join(root, ...repoRel.split("/")));
   // Byte-exact: raw blob bytes vs the raw local file. Decoded-string compares
   // would treat two different invalid-UTF-8 sequences as equal and could hide
   // a real upstream change.
-  return !head.stdout.equals(readFileSync(toAbs(repoRel)));
+  return !head.stdout.equals(readFileSync(join(root, ...repoRel.split("/"))));
 }
 
 function filesDiffer(a, b) {
@@ -475,6 +498,277 @@ function filesDiffer(a, b) {
 
 function toAbs(repoRel) {
   return join(ROOT, ...repoRel.split("/"));
+}
+
+// === merge subcommand ===
+//
+// `node scripts/vendor-sync.mjs merge [--dry-run]`: rebuild the three-way
+// merge for every patched file upstream changed since its pinned base
+// (`git merge-file`, base = pinned upstream blob, ours = local copy, theirs =
+// upstream HEAD), prove the patch survived mechanically (changed lines
+// compared, not eyeballed), and write the merged content only when it did.
+// The mechanics used to live in the my-skills-vendor-sync skill body as a
+// Git Bash block; Node spawns git directly, so the subcommand runs from any
+// shell and is deterministic and testable.
+
+// Verdicts that leave work for the human: the subcommand exits 1 when any
+// file lands here, a stop-and-report signal for the driving skill.
+const MERGE_ATTENTION_VERDICTS = new Set(["conflict", "error", "reshaped", "adopted", "no-pin"]);
+
+function mergeMain() {
+  const { patchedSet, pins, excludedRoots } = loadManifest("merge");
+  console.log(`Three-way merge of patched files (${patchedSet.size} patched files listed in PATCHES.md)`);
+  if (DRY_RUN) console.log("Dry run: reporting only, no files will be written.");
+
+  const results = [];
+  const errors = [];
+  let failed = false;
+  for (const source of SOURCES) {
+    console.log(`\n=== ${source.name} — ${source.url} ===`);
+    const r = mergeSource(source, patchedSet, pins, excludedRoots, ROOT, DRY_RUN);
+    results.push(...r.items);
+    if (r.head) console.log(`  merged against ${source.name} HEAD ${r.head}`);
+    for (const e of r.errors) {
+      errors.push(e);
+      console.error(`  error: ${e}`);
+    }
+    if (r.errors.length > 0) failed = true;
+  }
+
+  let needsAttention = 0;
+  for (const item of results) {
+    if (MERGE_ATTENTION_VERDICTS.has(item.verdict)) needsAttention++;
+    switch (item.verdict) {
+      case "merged":
+        console.log(
+          `  [merge] ${item.path} — clean three-way, patch survived (changed lines identical) — ${DRY_RUN ? "would write merged content" : "written"}`,
+        );
+        break;
+      case "conflict":
+        console.log(
+          `  [merge] ${item.path} — conflict; nothing written. Marked hunks + both sides kept in ${item.tmpDir}`,
+        );
+        break;
+      case "error":
+        console.log(`  [merge] ${item.path} — git merge-file failed: ${item.stderr} (kept in ${item.tmpDir})`);
+        break;
+      case "reshaped":
+        console.log(
+          `  [merge] ${item.path} — clean merge but the patch reshaped (changed lines differ); not written. Old vs new diffs in ${item.tmpDir}`,
+        );
+        break;
+      case "adopted":
+        console.log(
+          `  [merge] ${item.path} — upstream adopted the local patch; copy already current; restate the PATCHES.md row`,
+        );
+        break;
+      case "no-pin":
+        console.log(
+          `  [merge] ${item.path} — pinned commit unfetchable; manual reconcile (local-vs-HEAD diff in ${item.tmpDir})`,
+        );
+        break;
+      default:
+        console.log(`  [merge] ${item.path} — ${item.verdict}`);
+    }
+  }
+  if (results.length === 0) {
+    console.log("  nothing to merge — no patched file changed upstream since the pins");
+  }
+  if (errors.length > 0) console.error(`\n${errors.length} source(s) failed.`);
+
+  // Machine-readable summary for the driving skill: per-file verdicts plus the
+  // attention flag that decides the exit code.
+  console.log(
+    `MERGE_SUMMARY=${JSON.stringify({
+      dryRun: DRY_RUN,
+      failed,
+      needsAttention,
+      files: results.map((r) => ({ path: r.path, verdict: r.verdict, written: r.written ?? false })),
+    })}`,
+  );
+  process.exit(failed || needsAttention > 0 ? 1 : 0);
+}
+
+// Per source: clone HEAD + fetch the pinned base, then merge every patched
+// file upstream moved since the pin. Current patched files are skipped
+// silently; removed-upstream patched files are left alone (keep-or-drop is a
+// maintainer decision, not mechanics).
+export function mergeSource(source, patchedSet, pins, excludedRoots, root, dryRun) {
+  const r = { items: [], errors: [], head: null };
+  const { tmp, cloneDir, pin, pinAvailable, error } = cloneAndFetchPin(source, pins);
+  if (error) {
+    r.errors.push(error);
+    return r;
+  }
+  if (!pinAvailable && pin) {
+    console.error(
+      `  note: pinned commit ${pin} not fetchable for ${source.name} — fallback to local-vs-HEAD reconcile`,
+    );
+  }
+  try {
+    const head = spawnSync("git", ["-C", cloneDir, "rev-parse", "HEAD"], { encoding: "utf8" });
+    if (head.status === 0) r.head = head.stdout.trim();
+    for (const [repoRel, upstreamAbs] of enumerateManaged(source, excludedRoots, cloneDir)) {
+      if (!patchedSet.has(repoRel)) continue;
+      if (!patchedDiffers(cloneDir, upstreamAbs, repoRel, pin, pinAvailable, root)) continue;
+      r.items.push(mergeOne({ cloneDir, upstreamAbs, repoRel, root, pin, pinAvailable }, dryRun));
+    }
+    return r;
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+// One file's three-way merge. Reads ours from the local copy, base/theirs from
+// the clone's blobs, runs git merge-file, classifies the outcome, and writes
+// the merged content only for a clean merge whose patch survived (and never in
+// dry-run). Attention verdicts keep their temp dir (ours/base/theirs/merged,
+// plus the diffs the human must review) so nothing the resolver needs is lost.
+function mergeOne({ cloneDir, upstreamAbs, repoRel, root, pin, pinAvailable }, dryRun) {
+  const tmpDir = mkdtempSync(join(os.tmpdir(), "my-skills-merge-file-"));
+  const rel = relative(cloneDir, upstreamAbs).split(sep).join("/");
+  const localAbs = join(root, ...repoRel.split("/"));
+  const ours = readFileSync(localAbs);
+
+  const theirsRes = catFile(cloneDir, `HEAD:${rel}`);
+  if (theirsRes.status !== 0) {
+    // Keep whatever evidence exists so the "kept in …" report stays truthful.
+    writeFileSync(join(tmpDir, "ours"), ours);
+    return { path: repoRel, verdict: "error", tmpDir, stderr: `HEAD:${rel} not readable` };
+  }
+  const theirs = theirsRes.stdout;
+
+  // Pinned base unavailable (force-push / GC upstream): no three-way is
+  // possible. Keep the local-vs-HEAD diff for the by-hand reconcile.
+  if (!pinAvailable || !pin) {
+    writeFileSync(join(tmpDir, "ours"), ours);
+    writeFileSync(join(tmpDir, "theirs"), theirs);
+    writeDiffFile(join(tmpDir, "ours"), join(tmpDir, "theirs"), join(tmpDir, "ours-vs-theirs.diff"));
+    return { path: repoRel, verdict: "no-pin", tmpDir };
+  }
+  const baseRes = catFile(cloneDir, `${pin}:${rel}`);
+  if (baseRes.status !== 0) {
+    writeFileSync(join(tmpDir, "ours"), ours);
+    writeFileSync(join(tmpDir, "theirs"), theirs);
+    writeDiffFile(join(tmpDir, "ours"), join(tmpDir, "theirs"), join(tmpDir, "ours-vs-theirs.diff"));
+    return { path: repoRel, verdict: "no-pin", tmpDir };
+  }
+  const base = baseRes.stdout;
+
+  writeFileSync(join(tmpDir, "ours"), ours);
+  writeFileSync(join(tmpDir, "base"), base);
+  writeFileSync(join(tmpDir, "theirs"), theirs);
+  // --diff3 only changes the conflict-marker style (adds the base view), so a
+  // single run doubles as both the merged output and the resolver's view.
+  const res = runMergeFile(join(tmpDir, "ours"), join(tmpDir, "base"), join(tmpDir, "theirs"), true);
+  writeFileSync(join(tmpDir, "merged"), res.merged);
+
+  // Prove the patch survived mechanically: the re-applied patch's changed
+  // lines must equal the old patch's — only line numbers and context positions
+  // may move.
+  const oldLines = diffChangedLines(join(tmpDir, "base"), join(tmpDir, "ours"));
+  const newLines = diffChangedLines(join(tmpDir, "theirs"), join(tmpDir, "merged"));
+  const verdict = decideVerdict({ clean: res.clean, status: res.status, ours, theirs, oldLines, newLines });
+
+  switch (verdict) {
+    case "merged":
+      if (!dryRun) writeFileSync(localAbs, res.merged);
+      rmSync(tmpDir, { recursive: true, force: true });
+      return { path: repoRel, verdict, written: !dryRun };
+    case "adopted":
+      rmSync(tmpDir, { recursive: true, force: true });
+      return { path: repoRel, verdict };
+    case "conflict":
+      // Same content as `merged` (already in diff3 style); a distinct name so
+      // the resolver's two views are obvious.
+      copyFileSync(join(tmpDir, "merged"), join(tmpDir, "merged.diff3"));
+      return { path: repoRel, verdict, tmpDir, stderr: res.stderr };
+    case "reshaped":
+      writeDiffFile(join(tmpDir, "base"), join(tmpDir, "ours"), join(tmpDir, "base-ours.diff"));
+      writeDiffFile(join(tmpDir, "theirs"), join(tmpDir, "merged"), join(tmpDir, "theirs-merged.diff"));
+      return { path: repoRel, verdict, tmpDir };
+    default:
+      return { path: repoRel, verdict, tmpDir, stderr: res.stderr };
+  }
+}
+
+function catFile(cloneDir, rev) {
+  return spawnSync("git", ["-C", cloneDir, "cat-file", "blob", rev]);
+}
+
+// Run git's native three-way file merge. Exit 0 = clean, 1 = conflict,
+// anything else = a git failure. `diff3` only changes the conflict-marker
+// style (base view added). Output stays raw bytes (no encoding option).
+export function runMergeFile(oursAbs, baseAbs, theirsAbs, diff3 = false) {
+  const args = ["merge-file", "-p"];
+  if (diff3) args.push("--diff3");
+  args.push(oursAbs, baseAbs, theirsAbs);
+  const r = spawnSync("git", args);
+  return {
+    status: r.status,
+    clean: r.status === 0,
+    merged: r.stdout,
+    stderr: (r.stderr ?? Buffer.alloc(0)).toString("utf8"),
+  };
+}
+
+// Write `git diff --no-index a b` (exit 1 = differ, expected) to `outAbs` for
+// the human to review; binary/broken output is written as-is.
+function writeDiffFile(aAbs, bAbs, outAbs) {
+  const r = spawnSync("git", ["diff", "--no-index", "--", aAbs, bAbs]);
+  writeFileSync(outAbs, r.stdout ?? Buffer.alloc(0));
+}
+
+// The changed lines of a diff, marker byte stripped, header/context lines
+// dropped — the portable, byte-exact equivalent of the skill body's old
+// `git diff --no-index … | awk '/^[-+]/ && !/^[-+]{3}/ { print substr($0,2) }'`.
+// Returns null when the changed lines can't be trusted (git failure, or a
+// binary diff whose text would be meaningless) so the caller treats the patch
+// as unproven instead of silently "merged". Line content stays raw bytes —
+// never decoded, matching the file's byte-exact policy, so two different
+// invalid-UTF-8 sequences can't compare equal.
+export function diffChangedLines(aAbs, bAbs) {
+  const r = spawnSync("git", ["diff", "--no-index", "--", aAbs, bAbs]);
+  // Exit 1 = files differ (expected); 0 = identical; anything else is a git
+  // failure.
+  if (r.status === null || r.status > 1) return null;
+  const out = r.stdout ?? Buffer.alloc(0);
+  if (out.includes(Buffer.from("Binary files "))) return null;
+  const lines = [];
+  let start = 0;
+  for (let i = 0; i <= out.length; i++) {
+    if (i < out.length && out[i] !== 0x0a) continue;
+    const line = out.subarray(start, i);
+    start = i + 1;
+    const b0 = line[0];
+    if (b0 !== 0x2d && b0 !== 0x2b) continue; // not a changed line
+    // Drop the --- / +++ file-header lines (first three bytes all +/-).
+    if (line.length >= 3) {
+      const b1 = line[1];
+      const b2 = line[2];
+      if ((b1 === 0x2d || b1 === 0x2b) && (b2 === 0x2d || b2 === 0x2b)) continue;
+    }
+    lines.push(line.subarray(1));
+  }
+  return lines;
+}
+
+// Order matters: the survival proof compares the re-applied patch's changed
+// lines against the old patch's as sequences, exactly like the old `cmp`.
+// null (untrustworthy lines) never equals anything — the patch is unproven.
+export function patchLinesEqual(a, b) {
+  if (a === null || b === null) return false;
+  if (a.length !== b.length) return false;
+  return a.every((line, i) => Buffer.from(line).equals(Buffer.from(b[i])));
+}
+
+// The single decision point for a merge outcome. Bytes are compared raw
+// (Buffer.from normalizes string fixtures in tests); nothing is decoded, so
+// two different invalid-UTF-8 sequences can't compare equal.
+export function decideVerdict({ clean, status, ours, theirs, oldLines, newLines }) {
+  if (!clean) return status === 1 ? "conflict" : "error";
+  if (Buffer.from(ours).equals(Buffer.from(theirs))) return "adopted";
+  return patchLinesEqual(oldLines, newLines) ? "merged" : "reshaped";
 }
 
 function log(action, path) {

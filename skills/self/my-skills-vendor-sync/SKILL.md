@@ -35,32 +35,23 @@ Classify every pending item:
 
 ### Patched, upstream modified — three-way merge
 
-Rebuild each file's merge in a temp dir. Run this block from **Git Bash or WSL** (PowerShell cannot `mktemp`/redirect reliably; the repo's Windows-runtime pattern). Per source, gather the clone URL (the `SOURCES` array in `scripts/vendor-sync.mjs`), the pinned commit (the **Upstream references** table in `PATCHES.md`), and each row's **Upstream counterpart** (the file's path inside the upstream repo):
+Run the merge subcommand — it rebuilds each file's three-way merge (`git merge-file`: base = the pinned upstream blob, ours = the local copy, theirs = upstream HEAD), proves the patch survived mechanically (changed lines compared, not eyeballed), and writes the merged content only when it did:
 
 ```
-tmp=$(mktemp -d)
-git clone --quiet --depth 1 <url> "$tmp/src"
-git -C "$tmp/src" fetch --quiet --depth 1 origin <pinned-commit>   # GitHub serves the SHA
+node scripts/vendor-sync.mjs merge --dry-run   # preview: report only, write nothing
+node scripts/vendor-sync.mjs merge             # write clean, patch-surviving merges
 ```
 
-For the file — `base` = pinned upstream, `ours` = the local consolidated copy, `theirs` = upstream HEAD:
+Node spawns git directly, so this runs from any shell — the old Git Bash/WSL block is gone. Read the per-file verdicts:
 
-```
-git -C "$tmp/src" show <pinned-commit>:<upstream-path> > "$tmp/base"
-git -C "$tmp/src" show HEAD:<upstream-path> > "$tmp/theirs"
-cp <local patched file> "$tmp/ours"
-git merge-file -p "$tmp/ours" "$tmp/base" "$tmp/theirs" > "$tmp/merged"   # exit 0 clean, 1 conflict
-```
+- **merged** — clean three-way, the patch survived (its changed lines are identical, only line numbers and context positions moved); the merged content was written over the consolidated copy. `git diff` the result and continue to step 4.
+- **adopted** — upstream adopted the local patch (the copy already equals upstream HEAD); nothing was written. Restate the row in step 4: the patch is no longer a deviation, so its **Verification method** ("git diff shows exactly N lines") no longer holds.
+- **conflict** — `git merge-file` exit 1. Nothing was written. Both sides and the marked merged content — plus `merged.diff3`, which also shows the base — are kept in the reported temp dir. Show the user the marked hunks (ours vs theirs) and the row; resolve with them — the genuine manual-merge case ADR-0002 anticipated.
+- **reshaped** — clean merge but the re-applied patch's changed lines differ from the old patch's; not written. (A line-ending difference between blobs and the local file also lands here — a spurious mismatch, conservative; worth a glance before the manual review.) The temp dir holds both diffs (`base-ours.diff`, `theirs-merged.diff`); show them to the user with the row, since the **Patch summary** must be rewritten together with the merge (step 4).
+- **no-pin** — the pinned commit is unfetchable (force-push or GC upstream). The script kept a local-vs-HEAD diff (`ours-vs-theirs.diff` in the reported temp dir); reconcile with the user by hand; the pin may need re-deriving.
+- **error** — git failed mid-merge (e.g. `HEAD:<path>` unreadable or a non-conflict `merge-file` failure); nothing was written. The reported temp dir holds whatever evidence exists; diagnose before retrying.
 
-- **Clean** (exit 0). First the adopted-patch case: `cmp "$tmp/ours" "$tmp/theirs"` — equal means upstream adopted the local patch, the copy is already the final content; write nothing, note it, and restate the row in step 4 (the patch is no longer a deviation, so the **Verification method** "git diff shows exactly N lines" no longer holds). Otherwise prove the patch survived **mechanically**, not by eye: the re-applied patch's changed lines must equal the old patch's, only line numbers and context positions may move — extract and compare them:
-  ```
-  git diff --no-index "$tmp/base" "$tmp/ours"    | awk '/^[-+]/ && !/^[-+]{3}/ { print substr($0,2) }' > "$tmp/old.patch"
-  git diff --no-index "$tmp/theirs" "$tmp/merged" | awk '/^[-+]/ && !/^[-+]{3}/ { print substr($0,2) }' > "$tmp/new.patch"
-  cmp "$tmp/old.patch" "$tmp/new.patch"
-  ```
-  `cmp` exit 0 → write the merged content over the consolidated copy. Mismatch → treat as a reshaped patch (a line-ending difference between blobs and the local file also lands here — a spurious mismatch, conservative; worth a glance before the manual review): do not write; show the user both diffs and the row, since the **Patch summary** must be rewritten together with the merge (step 4).
-- **Conflict** (exit 1). Do not write. Show the user the marked hunks (ours vs theirs; add `--diff3` for the base too) and the row; resolve with them — the genuine manual-merge case ADR-0002 anticipated. The temp files keep both sides.
-- **Pin unfetchable** (the `fetch` failed — force-push or GC upstream). Fall back to a by-hand merge: show `git diff --no-index <local copy> <theirs>` and reconcile with the user; the pin may need re-deriving.
+The subcommand exits 1 when any file needs attention (conflict / reshaped / adopted / no-pin / error) — a stop-and-report signal — and 0 when every pending merge was written.
 
 ### Removed upstream — the keep-or-drop call
 
@@ -75,7 +66,7 @@ For every file the dry run lists as **removed upstream (kept local)** — patche
 
 `PATCHES.md` is the single home of every deviation (ADR-0002) — keep it truthful to the new state:
 
-- **Bump the pins** — the **Upstream references** table records each source's pinned commit (the diff baseline). Bump each source that moved to the commit the maintenance actually merged against: step 3's clone HEAD (`git -C "$tmp/src" rev-parse HEAD`) when files were merged, else `git ls-remote <url> HEAD`. Current pins are what makes the freshness check read patched files as current again.
+- **Bump the pins** — the **Upstream references** table records each source's pinned commit (the diff baseline). Bump each source that moved to the commit the maintenance actually merged against: the **HEAD** the merge subcommand reported per source (`merged against <source> HEAD <sha>`) when files were merged, else `git ls-remote <url> HEAD` when only pins changed. Current pins are what makes the freshness check read patched files as current again.
 - **Patch summaries** — if a merge reshaped a patch, rewrite the row's **Patch summary** and **Verification method** to describe what `git diff` now shows.
 - **Removed rows** — drop rows for files the user dropped; restate as self-authored for files kept under `skills/self/`.
 

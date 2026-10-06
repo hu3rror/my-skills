@@ -46,9 +46,13 @@ node scripts/vendor-sync.mjs --dry-run
 
 # 实际同步：浅克隆各上游，写入 skills/<source>/，跳过 PATCHES.md 列出的补丁文件
 node scripts/vendor-sync.mjs
+
+# 对上游改动的补丁文件做三方合并（只写入干净且补丁存活的合并结果；
+# 有文件需要人工处理时——冲突/变形/被上游采纳/无法取到 pin——以退出码 1 报出)
+node scripts/vendor-sync.mjs merge
 ```
 
-补丁文件（`PATCHES.md` A 类）永不被覆盖；仅当上游自 `PATCHES.md` 上游引用表中记录的 pinned commit 起真正改动过该文件时，才报告为需要手动合并。上游删除的文件只报告、不删除，由维护者手动 `git rm`。GitHub Actions 提供同名 `vendor-sync` 手动工作流（`workflow_dispatch`，无定时），在日志中输出脚本摘要。
+补丁文件（`PATCHES.md` A 类）永不被覆盖；仅当上游自 `PATCHES.md` 上游引用表中记录的 pinned commit 起真正改动过该文件时，才报告为需要合并。`merge` 子命令随后重建每个此类三方合并（`git merge-file`，base = pinned commit），且只在本地补丁机制性存活——改动行完全一致——时才写入结果，把冲突、变形补丁、被上游采纳的补丁、以及无法取到 pin 的情况留给维护者处理。上游删除的文件只报告、不删除，由维护者手动 `git rm`。GitHub Actions 提供同名 `vendor-sync` 手动工作流（`workflow_dispatch`，无定时），在日志中输出脚本摘要。
 
 ## 回收游离技能（分发前）
 

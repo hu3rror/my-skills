@@ -73,14 +73,23 @@ node scripts/vendor-sync.mjs --dry-run
 
 # Real sync: shallow-clone each upstream into skills/<source>/, skipping PATCHES.md-listed files
 node scripts/vendor-sync.mjs
+
+# Three-way merge patched files upstream changed (writes clean, patch-surviving merges;
+# exits 1 when any file needs attention — conflict / reshaped / adopted / unpinnable)
+node scripts/vendor-sync.mjs merge
 ```
 
 Patched files (`PATCHES.md` A-class) are never overwritten; a patched file is
-reported as needing a manual merge only when upstream actually changed it since
-the pinned commit in `PATCHES.md`'s upstream-references table. Files upstream
-removed are reported but not deleted; the maintainer runs `git rm` by hand. A
-manually-triggered GitHub Actions workflow (`vendor-sync`, `workflow_dispatch`,
-no cron) runs the script and prints its summary to the logs.
+reported as needing a merge only when upstream actually changed it since the
+pinned commit in `PATCHES.md`'s upstream-references table. The `merge`
+subcommand then rebuilds each such three-way merge (`git merge-file`, base =
+the pinned commit) and writes the result only when the local patch survives
+mechanically — its changed lines identical — leaving conflicts, reshaped
+patches, adopted patches, and unpinnable bases to the maintainer. Files
+upstream removed are reported but not deleted; the maintainer runs `git rm` by
+hand. A manually-triggered GitHub Actions workflow (`vendor-sync`,
+`workflow_dispatch`, no cron) runs the script and prints its summary to the
+logs.
 
 A daily vendor freshness check (`.github/workflows/vendor-freshness-check.yml`,
 cron UTC 01:00 + manual dispatch) runs the dry-run and turns its result into a
