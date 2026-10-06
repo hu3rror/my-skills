@@ -5,7 +5,7 @@
 # dry-run never overwrites a patch record (`patches/`). No keepalive: GitHub
 # auto-disables scheduled workflows in public repos after
 # 60 days without repository activity (commits or manual workflow runs); a
-# manual vendor-sync run resets that clock.
+# any repository activity (a commit or the workflow's own manual dispatch) resets that clock.
 name: vendor-freshness-check
 
 on:

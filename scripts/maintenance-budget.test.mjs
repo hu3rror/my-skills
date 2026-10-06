@@ -10,7 +10,6 @@
 // the metering must not break it to enforce it).
 //
 // Baselines measured at commit 7c0c3a4 (docs/maintenance-budget.md):
-// Baselines measured at commit 7c0c3a4 (docs/maintenance-budget.md):
 //   - scripts code + tests: 3059 lines (the 2350 cited in #27 was the
 //     charting-day draft at 8bdc964; the +709 delta is the already-landed
 //     #23 rework and #24 merge-subcommand prep — part of the new mechanism).

@@ -256,7 +256,7 @@ export function verifyAll({ root = ROOT, patchesDir = PATCHES_DIR, metaDir = VEN
   for (const r of records) {
     const fm = r.fm;
     if (!fm.id) fail(`missing id: ${r.rel}`);
-    else if (ids.has(fm.id) && records.filter((o) => o.fm.id === fm.id).length > 1) fail(`duplicate id ${fm.id}: ${r.rel}`);
+    else if (records.filter((o) => o.fm.id === fm.id).length > 1) fail(`duplicate id ${fm.id}: ${r.rel}`);
     if (!fm.file) fail(`missing file: ${r.rel}`);
     else if (!existsSync(join(root, fm.file))) fail(`file not in repo: ${fm.file} (${r.rel})`);
     if (!["diff", "behavioral"].includes(fm.verification)) {

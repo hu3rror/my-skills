@@ -743,9 +743,8 @@ function mergeOne({ cloneDir, upstreamAbs, repoRel, root, pin, pinAvailable }, d
   }
 }
 
-// Fetch one object from the clone (used for base/theirs blobs). Exported for
-// verify-patch-records.mjs, which reads the pinned blobs record hunks apply to.
-export function catFile(cloneDir, rev) {
+// Fetch one object from the clone (used for base/theirs blobs).
+function catFile(cloneDir, rev) {
   return spawnSync("git", ["-C", cloneDir, "cat-file", "blob", rev]);
 }
 
