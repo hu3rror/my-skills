@@ -17,11 +17,13 @@ Infer the repo from `git remote -v`; `gh` does this automatically when run insid
 
 Attach the verification report in a **single write** — `gh issue close <number> --comment "<AC-by-AC report>"` — instead of `comment` then `close`. One write halves the exposure window when the network is flaky (next section) and never leaves an orphaned report comment behind.
 
-Before closing, `git status --porcelain` must be empty and **untracked files (`??`) count as dirty** — run probes/experiments under `$TEMP`, never the repo root.
+Before closing, `git status --porcelain` must be empty and **untracked files (`??`) count as dirty** — run probes/experiments under the literal `$TEMP` path (`C:/Users/Hue/AppData/Local/Temp`), never the repo root. **On this machine Git Bash's `/tmp` is `%TEMP%`, but Windows-native tools (node / python / pi's `write` tool) resolve `/tmp/...` to `C:\tmp\...` — one string, two roots.** Write the full `$TEMP` path explicitly in every scratch command and path argument.
 
 ## GitHub write hiccups
 
 Local `gh` writes (comment / close / edit) intermittently fail with `unexpected EOF` on the GraphQL POST while GETs stay healthy and no proxy is configured. That signature is transient network jitter, not a config problem — it self-heals in minutes, so work through it in this order instead of re-deriving a fix:
+
+Reads can also return empty on the same jitter — one retry resolves it, no dedupe needed (reads are idempotent).
 
 1. **Dedupe before retrying.** EOF means the request may or may not have landed, and a comment POST is not idempotent — blind retries duplicate comments. Run `gh issue view <number> --json comments` and skip (or delete) an identical body first.
 2. **Retry with backoff**: at most 3 attempts at 3s / 10s / 30s, covering the jitter window.
