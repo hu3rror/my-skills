@@ -83,4 +83,4 @@ A patch carried into the repo by the snapshot import (four: research/wayfinder p
 A must-fix platform patch applied to a consolidated copy (three: diagnosing-bugs, npm-release temp path, GitLab tracker quoting).
 
 **B-class advisory note**:
-A conditional environment issue recorded in the patch manifest, not patched into the skill body (four: jq, curl alias, rg, web-debug bash phrasing).
+A conditional environment issue recorded in `docs/advisory-notes.md`, not patched into the skill body (four: jq, curl alias, rg, web-debug bash phrasing).

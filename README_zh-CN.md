@@ -8,7 +8,7 @@
 
 | 目录 | 来源 | 说明 |
 |---|---|---|
-| `skills/mattpocock/{engineering,productivity}/<name>/` | [mattpocock/skills](https://github.com/mattpocock/skills) | 24 个技能（engineering 18 + productivity 6）；上游 `in-progress` / `misc` 分类及三个未使用的技能已从 vendor sync 排除（见 PATCHES.md） |
+| `skills/mattpocock/{engineering,productivity}/<name>/` | [mattpocock/skills](https://github.com/mattpocock/skills) | 24 个技能（engineering 18 + productivity 6）；上游 `in-progress` / `misc` 分类及三个未使用的技能已从 vendor sync 排除（排除项见 `vendor/mattpocock.json`） |
 | `skills/kill-ai-slop/<name>/` | [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop) | kill-ai-slop（上游路径为 `skill/`，聚合后归一为来源目录） |
 | `skills/cloudflare/<name>/` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | security-audit（来源已溯源，记录于本机 `~/.agents/.skill-lock.json`） |
 | `skills/self/<name>/` | 自建 | de-slop、web-debug、consolidate-strays（通用；de-slop 带 `disable-model-invocation: true`，仅显式调用；consolidate-strays 为模型调用——description 限定在 stray 回收请求，且默认跑只读 dry-run，避免其他 harness 误触发）；write-release-notes（通用，模型调用——description 限定在 GitHub Release 发布说明请求，只在写发布说明时触发）；setup-repo（通用，`disable-model-invocation: true`——一次性仓库 setup，驱动 `setup-matt-pocock-skills` 再 `setup-coding-standards`，见 ADR-0005）；npm-release、pi-extension-sync（pi 专属，带 `disable-model-invocation: true`，避免其他 harness 自动触发） |
@@ -17,7 +17,7 @@
 
 ## 基线导入
 
-仓库以本机 `~/.agents/skills` 当前快照**逐字节导入**（105 个文件），因而天然携带快照里已有的 4 处基线补丁。相对上游的全部差异（基线补丁与新增 A 类补丁，以及 B 类环境备忘）记录在根目录 [`PATCHES.md`](PATCHES.md)（`self/` 为自建技能，无上游）；上游来源技能已逐文件校验。基线 4 处为：
+仓库以本机 `~/.agents/skills` 当前快照**逐字节导入**（105 个文件），因而天然携带快照里已有的 4 处基线补丁。相对上游的全部差异（基线补丁与新增 A 类补丁）记录在根目录 [`PATCHES.md`](PATCHES.md)；B 类环境备忘见 [`docs/advisory-notes.md`](docs/advisory-notes.md)，各来源 pin/排除项见 [`vendor/`](vendor/README.md)（`self/` 为自建技能，无上游）；上游来源技能已逐文件校验。基线 4 处为：
 
 - `research/SKILL.md`：pi 后台 research agent 完成即推送的机制说明（+2 行）
 - `wayfinder/SKILL.md`：research 子代理完成推送的处理方式（+1 行）
@@ -52,7 +52,7 @@ node scripts/vendor-sync.mjs
 node scripts/vendor-sync.mjs merge
 ```
 
-补丁文件（`PATCHES.md` A 类）永不被覆盖；仅当上游自 `PATCHES.md` 上游引用表中记录的 pinned commit 起真正改动过该文件时，才报告为需要合并。`merge` 子命令随后重建每个此类三方合并（`git merge-file`，base = pinned commit），且只在本地补丁机制性存活——改动行完全一致——时才写入结果，把冲突、变形补丁、被上游采纳的补丁、以及无法取到 pin 的情况留给维护者处理。上游删除的文件只报告、不删除，由维护者手动 `git rm`。GitHub Actions 提供同名 `vendor-sync` 手动工作流（`workflow_dispatch`，无定时），在日志中输出脚本摘要。
+补丁文件（`PATCHES.md` A 类）永不被覆盖；仅当上游自 `vendor/<source>.json` 中记录的 pinned commit 起真正改动过该文件时，才报告为需要合并。`merge` 子命令随后重建每个此类三方合并（`git merge-file`，base = pinned commit），且只在本地补丁机制性存活——改动行完全一致——时才写入结果，把冲突、变形补丁、被上游采纳的补丁、以及无法取到 pin 的情况留给维护者处理。上游删除的文件只报告、不删除，由维护者手动 `git rm`。GitHub Actions 提供同名 `vendor-sync` 手动工作流（`workflow_dispatch`，无定时），在日志中输出脚本摘要。
 
 ## 回收游离技能（分发前）
 

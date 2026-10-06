@@ -1,6 +1,6 @@
 ---
 name: my-skills-vendor-sync
-description: "Vendor-sync maintenance for the my-skills aggregation repo: resolve pending updates — sync, three-way-merge patched files, bump the PATCHES.md pins, verify the copies are current, propose commit/push/issue-close."
+description: "Vendor-sync maintenance for the my-skills aggregation repo: resolve pending updates — sync, three-way-merge patched files, bump the pins in vendor/<source>.json, verify the copies are current, propose commit/push/issue-close."
 disable-model-invocation: true
 ---
 
@@ -64,9 +64,9 @@ For every file the dry run lists as **removed upstream (kept local)** — patche
 
 ## 4. Update the patch manifest
 
-`PATCHES.md` is the single home of every deviation (ADR-0002) — keep it truthful to the new state:
+`PATCHES.md` (A-class rows) and the pins in `vendor/<source>.json` are the record of every deviation (ADR-0002; pins rehomed per map ticket #23) — keep both truthful to the new state:
 
-- **Bump the pins** — the **Upstream references** table records each source's pinned commit (the diff baseline). Bump each source that moved to the commit the maintenance actually merged against: the **HEAD** the merge subcommand reported per source (`merged against <source> HEAD <sha>`) when files were merged, else `git ls-remote <url> HEAD` when only pins changed. Current pins are what makes the freshness check read patched files as current again.
+- **Bump the pins** — each source's pinned commit (the diff baseline) lives in `vendor/<source>.json`. Bump each source that moved to the commit the maintenance actually merged against: the **HEAD** the merge subcommand reported per source (`merged against <source> HEAD <sha>`) when files were merged, else `git ls-remote <url> HEAD` when only pins changed. Current pins are what makes the freshness check read patched files as current again.
 - **Patch summaries** — if a merge reshaped a patch, rewrite the row's **Patch summary** and **Verification method** to describe what `git diff` now shows.
 - **Removed rows** — drop rows for files the user dropped; restate as self-authored for files kept under `skills/self/`.
 

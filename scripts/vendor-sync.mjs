@@ -23,26 +23,23 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PATCHES_PATH = join(ROOT, "PATCHES.md");
+const VENDOR_DIR = join(ROOT, "vendor");
 const DRY_RUN = process.argv.includes("--dry-run");
 
 // Upstream sources. `targetRoot` is the repo directory this source owns (used
 // to prune files upstream has removed). `skillRoots` maps each upstream skill
-// directory to its repo-relative counterpart.
+// directory to its repo-relative counterpart. The per-source *data* (repo, url,
+// pinned commit, exclusions, release repo) lives in `vendor/<name>.json` (map
+// ticket #23) and is attached by loadManifest; this array keeps only the
+// path-mapping code.
 const SOURCES = [
   {
     name: "mattpocock",
-    url: "https://github.com/mattpocock/skills.git",
-    repo: "mattpocock/skills", // key in PATCHES.md's upstream references table
     targetRoot: "skills/mattpocock",
-    // Release-tracked upstream: the freshness check fetches its latest
-    // release as context (see the per-source releaseRepo in the summary).
-    releaseRepo: "mattpocock/skills",
     skillRoots: mattpocockSkillRoots,
   },
   {
     name: "kill-ai-slop",
-    url: "https://github.com/yetone/kill-ai-slop.git",
-    repo: "yetone/kill-ai-slop", // key in PATCHES.md's upstream references table
     targetRoot: "skills/kill-ai-slop/kill-ai-slop",
     skillRoots: fixedSkillRoots([
       { upstream: "skill", target: "skills/kill-ai-slop/kill-ai-slop" },
@@ -50,8 +47,6 @@ const SOURCES = [
   },
   {
     name: "cloudflare",
-    url: "https://github.com/cloudflare/security-audit-skill.git",
-    repo: "cloudflare/security-audit-skill", // key in PATCHES.md's upstream references table
     targetRoot: "skills/cloudflare/security-audit",
     skillRoots: fixedSkillRoots([
       {
@@ -75,10 +70,27 @@ function main() {
 // row that fails to parse into a real file path (e.g. the table gains a
 // column) would silently shrink the set this mechanism exists to protect —
 // refuse rather than risk an overwrite.
+//
+// Pins and exclusions moved out of PATCHES.md's tables into per-source meta
+// (`vendor/<name>.json`, map ticket #23): pins keyed by repo, exclusions as
+// upstream-repo-relative path lists; url/repo/releaseRepo land on the source
+// config for cloning and the freshness summary. A missing or invalid meta
+// throws here (see loadSourceMeta) — a silently dropped pin or exclusion
+// would unprotect a patch, so the script refuses to run instead.
 function loadManifest(mode) {
   const patchedSet = parsePatchedFiles();
-  const pins = parseUpstreamRefs();
-  const excludedRoots = parseExcludedRoots();
+  const pins = new Map();
+  const excludedRoots = new Map();
+  for (const source of SOURCES) {
+    const meta = loadSourceMeta(source.name);
+    source.repo = meta.repo;
+    source.url = meta.url;
+    source.releaseRepo = meta.releaseRepo ?? null;
+    pins.set(meta.repo, meta.pin);
+    if (meta.exclusions?.length) {
+      excludedRoots.set(meta.repo, meta.exclusions.map((e) => e.path));
+    }
+  }
   if (patchedSet.size === 0) {
     console.error(
       `PATCHES.md: no A-class patched files found. Refusing to ${mode} — proceeding would risk overwriting local patches.`,
@@ -326,9 +338,10 @@ export function mattpocockSkillRoots(cloneDir, excluded = []) {
     // Mattpocock skill roots sit exactly at skills/<category>/<name>/SKILL.md;
     // deeper SKILL.md files are internals of a skill, not separate skills.
     if (skillRel.split("/").length !== 2) continue;
-    // Manifest-declared exclusions (PATCHES.md "Excluded from vendor sync")
-    // are skipped silently — the paths are upstream-repo-relative and matched
-    // boundary-safe, so a category exclusion covers every skill under it.
+    // Manifest-declared exclusions (vendor/<name>.json "exclusions", map
+    // ticket #23) are skipped silently — the paths are upstream-repo-relative
+    // and matched boundary-safe, so a category exclusion covers every skill
+    // under it.
     if (isExcludedUpstreamPath(`skills/${skillRel}`, excluded)) continue;
     roots.push({
       upstreamDir: join(scan, ...skillRel.split("/")),
@@ -376,42 +389,50 @@ function parsePatchedFiles() {
   return files;
 }
 
-// Parse PATCHES.md's "Upstream references" table: Source repo -> pinned commit
-// (the diff baseline the A-class rows verify against). Pinned commits let the
-// freshness check distinguish "upstream changed a patched file" (pending) from
-// "our patch makes it differ" (current).
-export function parseUpstreamRefs(text = readFileSync(PATCHES_PATH, "utf8")) {
-  const pins = new Map();
-  parseSectionTable(text, "## Upstream references", (cells) => {
-    // | Source | URL | Pinned commit (diff baseline) |  → cells[1], cells[3]
-    if (cells.length < 4) return;
-    const repo = cells[1];
-    const pin = cells[3];
-    if (repo && repo !== "Source" && pin && !/^-+$/.test(pin)) {
-      pins.set(repo, pin);
+// Parse + validate one per-source meta file (vendor/<name>.json, map ticket
+// #23): repo/url/pin are required, exclusions optional (path + reason each),
+// releaseRepo/kind/note optional. Failures throw — a missing required field,
+// a name mismatch or malformed JSON would otherwise silently drop the pin or
+// the exclusions the sync guard depends on.
+export function parseSourceMeta(text, name) {
+  let meta;
+  try {
+    meta = JSON.parse(text);
+  } catch (err) {
+    throw new Error(`vendor meta ${name}.json: invalid JSON: ${err.message}`);
+  }
+  if (meta.name !== name) {
+    throw new Error(`vendor meta ${name}.json: name mismatch (file says "${meta.name}")`);
+  }
+  for (const field of ["repo", "url", "pin"]) {
+    if (typeof meta[field] !== "string" || meta[field].length === 0) {
+      throw new Error(`vendor meta ${name}.json: missing or invalid "${field}"`);
     }
-  });
-  return pins;
+  }
+  if (meta.releaseRepo !== undefined && (typeof meta.releaseRepo !== "string" || meta.releaseRepo.length === 0)) {
+    throw new Error(`vendor meta ${name}.json: missing or invalid "releaseRepo"`);
+  }
+  if (meta.exclusions !== undefined) {
+    if (!Array.isArray(meta.exclusions)) {
+      throw new Error(`vendor meta ${name}.json: "exclusions" must be an array`);
+    }
+    for (const ex of meta.exclusions) {
+      if (typeof ex?.path !== "string" || typeof ex?.reason !== "string") {
+        throw new Error(`vendor meta ${name}.json: exclusion entries need "path" and "reason"`);
+      }
+    }
+  }
+  return meta;
 }
 
-// Parse PATCHES.md's "Excluded from vendor sync" section: Source repo -> list of
-// upstream-repo-relative path prefixes the sync must skip silently (curation,
-// not drift — they must never surface as pending updates). Absent section or
-// absent rows parse to an empty map, so a manifest without the section behaves
-// exactly as before.
-export function parseExcludedRoots(text = readFileSync(PATCHES_PATH, "utf8")) {
-  const excluded = new Map();
-  parseSectionTable(text, "## Excluded from vendor sync", (cells) => {
-    // | Source | Excluded upstream path | Reason |  → cells[1], cells[2]
-    if (cells.length < 3) return;
-    const repo = cells[1];
-    const path = cells[2];
-    if (repo && repo !== "Source" && path && !/^-+$/.test(path)) {
-      if (!excluded.has(repo)) excluded.set(repo, []);
-      excluded.get(repo).push(path);
-    }
-  });
-  return excluded;
+// Read one per-source meta file. `dir` is injectable so tests can point at a
+// fixture tree; the default is the repo's vendor/ directory.
+export function loadSourceMeta(name, dir = VENDOR_DIR) {
+  const abs = join(dir, `${name}.json`);
+  if (!existsSync(abs)) {
+    throw new Error(`vendor meta missing: vendor/${name}.json`);
+  }
+  return parseSourceMeta(readFileSync(abs, "utf8"), name);
 }
 
 // Scan one `## <heading>` table in PATCHES.md and call `row` for every data row

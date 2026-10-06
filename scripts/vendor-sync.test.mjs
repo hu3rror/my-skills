@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Unit tests for scripts/vendor-sync.mjs's manifest parsing and patched-file
-// classification. Offline and deterministic: fixtures only, no network, no
-// clones. The pin-based "does a patched file need a manual merge" rule is what
-// lets the vendor freshness check go green — a regression here re-opens the
-// false-positive pending-update issues (every patched file listed as "manual
-// merge" even when upstream never moved).
+// Unit tests for scripts/vendor-sync.mjs's per-source meta parsing and
+// patched-file classification. Offline and deterministic: fixtures only, no
+// network, no clones. The pin-based "does a patched file need a manual merge"
+// rule is what lets the vendor freshness check go green — a regression here
+// re-opens the false-positive pending-update issues (every patched file listed
+// as "manual merge" even when upstream never moved).
 
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -13,82 +13,124 @@ import { dirname, join, sep } from "node:path";
 import { tmpdir } from "node:os";
 import {
   isExcludedUpstreamPath,
+  loadSourceMeta,
   mattpocockSkillRoots,
-  parseExcludedRoots,
-  parseUpstreamRefs,
+  parseSourceMeta,
   patchedNeedsMerge,
 } from "./vendor-sync.mjs";
 
-// Mirrors PATCHES.md's real upstream-references table.
-const REFS_FIXTURE = `# PATCHES.md — Patch manifest
+// Mirrors the real vendor/mattpocock.json per-source meta (map ticket #23):
+// pins, exclusions and the release repo moved out of PATCHES.md's tables into
+// per-source data files.
+const MATTPOCOCK_META = {
+  name: "mattpocock",
+  repo: "mattpocock/skills",
+  url: "https://github.com/mattpocock/skills.git",
+  pin: "4588b32ecab9ecc9fc8cc6b6c5e7d675b6004b0d",
+  releaseRepo: "mattpocock/skills",
+  exclusions: [
+    { path: "skills/in-progress", reason: "beta category, not needed" },
+    { path: "skills/misc", reason: "uncurated one-offs, not needed" },
+    { path: "skills/engineering/wizard", reason: "not used by this maintainer" },
+    { path: "skills/engineering/triage", reason: "solo dev, no inbound issues to triage" },
+    { path: "skills/productivity/to-questionnaire", reason: "not used by this maintainer" },
+  ],
+};
 
-## Upstream references
+// A manual-fork source (github/awesome-copilot): pinned for provenance and as
+// the #10 diff baseline, but never synced, so no exclusions or release repo.
+const AWESOME_COPILOT_META = {
+  name: "awesome-copilot",
+  repo: "github/awesome-copilot",
+  url: "https://github.com/github/awesome-copilot",
+  pin: "caab1f623bb68a330f294a11279597d7ae7be737",
+  kind: "manual-fork",
+  note: "localized create-readme (remote template URLs -> references/); not registered in vendor-sync SOURCES",
+};
 
-| Source | URL | Pinned commit (diff baseline) |
-|---|---|---|
-| mattpocock/skills | https://github.com/mattpocock/skills | \`c55ee46073ed923f86ce59a5eb3b6d895095d1b7\` |
-| yetone/kill-ai-slop | https://github.com/yetone/kill-ai-slop | \`f6e2ae32b30443ec7bd0da4da971ee18d8f8ffcb\` |
-| cloudflare/security-audit-skill | https://github.com/cloudflare/security-audit-skill | \`c1c8a8c1471069fb0e188eeaff69b8e8db6564a8\` |
-
-## A-class patches (applied, must-fix)
-
-| # | Origin | File (repo-relative) | Patch summary | Upstream counterpart | Verification method |
-|---|---|---|---|---|---|
-| 1 | baseline | \`skills/mattpocock/engineering/research/SKILL.md\` | +2 lines appended | mattpocock/skills \`skills/engineering/research/SKILL.md\` | git diff shows exactly 2 added lines |
-`;
-
-test("parseUpstreamRefs maps each source to its pinned commit", () => {
-  assert.deepEqual([...parseUpstreamRefs(REFS_FIXTURE).entries()], [
-    ["mattpocock/skills", "c55ee46073ed923f86ce59a5eb3b6d895095d1b7"],
-    ["yetone/kill-ai-slop", "f6e2ae32b30443ec7bd0da4da971ee18d8f8ffcb"],
-    ["cloudflare/security-audit-skill", "c1c8a8c1471069fb0e188eeaff69b8e8db6564a8"],
-  ]);
-});
-
-test("parseUpstreamRefs ignores table header, separator, and later sections", () => {
-  const pins = parseUpstreamRefs(REFS_FIXTURE);
-  assert.equal(pins.size, 3); // header `---` row and A-class table rows skipped
-  assert.equal(pins.has("Source"), false);
-  assert.equal(pins.has("1"), false);
-});
-
-test("parseUpstreamRefs tolerates a bare empty table", () => {
-  assert.deepEqual(
-    [...parseUpstreamRefs("## Upstream references\n\n| Source | URL | Pinned commit |\n|---|---|---|\n").entries()],
-    [],
-  );
-});
-
-// Mirrors PATCHES.md's future "Excluded from vendor sync" section: upstream
-// paths (repo-relative within the upstream repo) the sync must skip silently.
-const EXCLUDED_FIXTURE = `${REFS_FIXTURE}
-## Excluded from vendor sync
-
-| Source | Excluded upstream path | Reason |
-|---|---|---|
-| mattpocock/skills | \`skills/in-progress\` | beta category, not needed |
-| mattpocock/skills | \`skills/misc\` | uncurated one-offs, not needed |
-| mattpocock/skills | \`skills/engineering/wizard\` | not used by this maintainer |
-`;
-
-test("parseExcludedRoots maps each source to its excluded upstream paths", () => {
-  assert.deepEqual([...parseExcludedRoots(EXCLUDED_FIXTURE).entries()], [
-    ["mattpocock/skills", ["skills/in-progress", "skills/misc", "skills/engineering/wizard"]],
-  ]);
-});
-
-test("parseExcludedRoots ignores the table header, separator, and other sections", () => {
-  const excluded = parseExcludedRoots(EXCLUDED_FIXTURE);
-  assert.equal(excluded.size, 1);
-  assert.deepEqual(excluded.get("mattpocock/skills"), [
+test("parseSourceMeta parses a vendored source's meta", () => {
+  const meta = parseSourceMeta(JSON.stringify(MATTPOCOCK_META), "mattpocock");
+  assert.equal(meta.name, "mattpocock");
+  assert.equal(meta.repo, "mattpocock/skills");
+  assert.equal(meta.pin, "4588b32ecab9ecc9fc8cc6b6c5e7d675b6004b0d");
+  assert.equal(meta.releaseRepo, "mattpocock/skills");
+  assert.deepEqual(meta.exclusions.map((e) => e.path), [
     "skills/in-progress",
     "skills/misc",
     "skills/engineering/wizard",
+    "skills/engineering/triage",
+    "skills/productivity/to-questionnaire",
   ]);
 });
 
-test("parseExcludedRoots tolerates a manifest without the section", () => {
-  assert.equal(parseExcludedRoots(REFS_FIXTURE).size, 0);
+test("parseSourceMeta accepts a manual-fork meta without exclusions or release repo", () => {
+  const meta = parseSourceMeta(JSON.stringify(AWESOME_COPILOT_META), "awesome-copilot");
+  assert.equal(meta.kind, "manual-fork");
+  assert.equal(meta.exclusions, undefined);
+  assert.equal(meta.releaseRepo, undefined);
+});
+
+test("parseSourceMeta rejects a name mismatch between file and contents", () => {
+  assert.throws(
+    () => parseSourceMeta(JSON.stringify(MATTPOCOCK_META), "kill-ai-slop"),
+    /name mismatch/,
+  );
+});
+
+test("parseSourceMeta rejects invalid JSON", () => {
+  assert.throws(() => parseSourceMeta("{nope", "mattpocock"), /invalid JSON/);
+});
+
+test("parseSourceMeta rejects a meta missing a required field", () => {
+  const { pin, ...noPin } = MATTPOCOCK_META;
+  assert.throws(() => parseSourceMeta(JSON.stringify(noPin), "mattpocock"), /"pin"/);
+  const { url, ...noUrl } = MATTPOCOCK_META;
+  assert.throws(() => parseSourceMeta(JSON.stringify(noUrl), "mattpocock"), /"url"/);
+});
+
+test("parseSourceMeta rejects malformed exclusions", () => {
+  const bad = { ...MATTPOCOCK_META, exclusions: [{ path: "skills/x" }] }; // no reason
+  assert.throws(() => parseSourceMeta(JSON.stringify(bad), "mattpocock"), /exclusion/);
+  const notArray = { ...MATTPOCOCK_META, exclusions: "skills/in-progress" };
+  assert.throws(() => parseSourceMeta(JSON.stringify(notArray), "mattpocock"), /exclusions/);
+});
+
+test("parseSourceMeta rejects a malformed releaseRepo", () => {
+  const bad = { ...MATTPOCOCK_META, releaseRepo: 42 };
+  assert.throws(() => parseSourceMeta(JSON.stringify(bad), "mattpocock"), /releaseRepo/);
+});
+
+test("loadSourceMeta reads and validates vendor/<name>.json", () => {
+  const dir = mkdtempSync(join(tmpdir(), "meta-"));
+  try {
+    writeFileSync(join(dir, "mattpocock.json"), JSON.stringify(MATTPOCOCK_META));
+    const meta = loadSourceMeta("mattpocock", dir);
+    assert.equal(meta.pin, MATTPOCOCK_META.pin);
+    assert.deepEqual(meta.exclusions.map((e) => e.path), MATTPOCOCK_META.exclusions.map((e) => e.path));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("loadSourceMeta refuses a missing meta file (a dropped pin would unprotect a patch)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "meta-"));
+  try {
+    assert.throws(() => loadSourceMeta("nope", dir), /missing/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// Reads the committed vendor/ directory: a pin/exclusion edit that broke the
+// real files (e.g. a pin bump with a typo) fails here instead of silently
+// over-reporting or unprotecting a patch. Covers awesome-copilot too, which no
+// sync source loads.
+test("every real vendor/<name>.json parses with a 40-hex pin", () => {
+  for (const name of ["mattpocock", "kill-ai-slop", "cloudflare", "awesome-copilot"]) {
+    const meta = loadSourceMeta(name);
+    assert.match(meta.pin, /^[0-9a-f]{40}$/, `${name} pin must be a full commit SHA`);
+    assert.equal(meta.name, name);
+  }
 });
 
 test("isExcludedUpstreamPath matches only under the excluded prefix", () => {

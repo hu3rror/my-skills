@@ -5,18 +5,20 @@ the **patched** artifacts (fork semantics); this file is the source of truth for
 every deviation from upstream. Sync automation must **skip every file listed
 below** and report it as "upstream updated a patched file — merge manually".
 
-## Upstream references
+Each PATCHES.md concern now has a single home (map ticket #23):
 
-| Source | URL | Pinned commit (diff baseline) |
-|---|---|---|
-| mattpocock/skills | https://github.com/mattpocock/skills | `4588b32ecab9ecc9fc8cc6b6c5e7d675b6004b0d` |
-| yetone/kill-ai-slop | https://github.com/yetone/kill-ai-slop | `f6e2ae32b30443ec7bd0da4da971ee18d8f8ffcb` |
-| cloudflare/security-audit-skill | https://github.com/cloudflare/security-audit-skill | `c1c8a8c1471069fb0e188eeaff69b8e8db6564a8` |
-| github/awesome-copilot | https://github.com/github/awesome-copilot | `caab1f623bb68a330f294a11279597d7ae7be737` |
+- Pinned commits, exclusions and release repos →
+  [`vendor/<source>.json`](vendor/README.md) (per-source machine data).
+- B-class platform advisories (conditional environment issues, not patched
+  into bodies) → [`docs/advisory-notes.md`](docs/advisory-notes.md).
+- Self/ skills provenance (below) → the per-patch records' provenance fields
+  at the migration.
+- This file's own fate: the per-patch records (`patches/<source>/`) replace
+  the A-class table at the migration, and PATCHES.md is then **deleted** — the
+  records, the vendor meta and the advisory doc are the single homes.
 
-cloudflare/security-audit-skill's pin records the provenance trace (spec US14 — source found, so the skill lands under `skills/cloudflare/` rather than `skills/other/`); the source ships unpatched.
-
-`github/awesome-copilot` is a manual fork, **not registered in SOURCES**: its `create-readme` SKILL.md was localized (remote template URLs → local `references/` copies), and a synced source would report the local-only `references/` files as removed-upstream, keeping the freshness check permanently pending. The pin records the provenance trace and the diff baseline for the A-class patch below.
+Until the migration, the A-class table below is the sync guard (vendor-sync
+skips these files) and the interim patch index.
 
 `skills/self/` skills are self-authored (no upstream); their counterpart is the
 pre-consolidation home: for `npm-release` the last pre-deletion version is in
@@ -43,7 +45,7 @@ pre-consolidation home: for `npm-release` the last pre-deletion version is in
 
 | 14 | new | `skills/mattpocock/engineering/codebase-design/SKILL.md` | Description trimmed to a clear trigger: dropped the generic "user wants to…" scaffolding and the indirect-trigger clause ("or when another skill needs the deep-module vocabulary"); explicit when-not (routine feature work that doesn't touch module boundaries); 1 line replaced | mattpocock/skills `skills/engineering/codebase-design/SKILL.md` | `git diff` vs pinned upstream shows exactly the 1 replaced description line |
 | 15 | new | `skills/self/write-release-notes/references/release-notes-guide.md` | Structure template rewritten from a Chinese skeleton (`## 亮点`, Chinese item lines) to an English skeleton (`## Highlights` / `## Features` / `## Fixes` / `## Docs / Chore` / `## ⚠️ Breaking Changes` / `## Full Changelog`), with the Chinese guidance moved out of the fenced block as "理解用，不抄" notes — the copy-paste output is now English-headed; 17 lines added, 7 removed | self-authored; pre-consolidation copy removed from `~/.pi` in ticket #5 (last version in `~/.pi` repo history at commit `bf65334`) | the template section in `references/release-notes-guide.md` is the English skeleton with Chinese notes outside the fenced block; dry-run no longer reports write-release-notes as a modified stray |
-| 16 | new | `skills/mattpocock/engineering/ask-matt/SKILL.md` | Four dangling routing references to excluded skills dropped (see "Excluded from vendor sync" below): the `/triage` on-ramp row, `/triage` in the grilling-family sentence, the `/to-questionnaire` bullet, the `/wizard` bullet — the skills left the distribution set, so the catalog must not point at them | mattpocock/skills `skills/engineering/ask-matt/SKILL.md` | `git diff` vs pinned upstream shows exactly the removed lines (alongside patch #9's replaced paragraph) |
+| 16 | new | `skills/mattpocock/engineering/ask-matt/SKILL.md` | Four dangling routing references to excluded skills dropped (see the exclusions in `vendor/mattpocock.json`): the `/triage` on-ramp row, `/triage` in the grilling-family sentence, the `/to-questionnaire` bullet, the `/wizard` bullet — the skills left the distribution set, so the catalog must not point at them | mattpocock/skills `skills/engineering/ask-matt/SKILL.md` | `git diff` vs pinned upstream shows exactly the removed lines (alongside patch #9's replaced paragraph) |
 | 17 | new | `skills/mattpocock/productivity/grill-me/SKILL.md` | Invocation line rewritten: "Call the Skill tool with grilling" → "Load the grilling skill (read its SKILL.md) and follow it" — pi has no `Skill` tool, so cross-skill invocation uses the read-a-SKILL.md mechanism the runtime documents; 1 line replaced | mattpocock/skills `skills/productivity/grill-me/SKILL.md` | `git diff` vs pinned upstream shows exactly the 1 replaced line |
 | 18 | new | `skills/mattpocock/engineering/grill-with-docs/SKILL.md` | Invocation line rewritten: "Call the Skill tool twice" → "Load two skills in order, grilling then domain-modeling (read each SKILL.md and follow it)" — same pi `Skill`-tool rationale; 1 line replaced | mattpocock/skills `skills/engineering/grill-with-docs/SKILL.md` | `git diff` vs pinned upstream shows exactly the 1 replaced line |
 | 19 | new | `skills/mattpocock/productivity/handoff/SKILL.md` | Handover preamble added — the doc opens with an alignment stop addressed to the next agent (read the doc and referenced artifacts in full → reply with the goal / current state / next steps / risks → wait for user confirmation before working); suggested-skills wording rewritten to load-not-invoke (`Skill` tool → read each SKILL.md and follow it); 5 lines added + 1 replaced | mattpocock/skills `skills/productivity/handoff/SKILL.md` | `git diff` vs pinned upstream shows exactly the 5 added lines and the 1 replaced line |
@@ -57,25 +59,8 @@ pre-consolidation home: for `npm-release` the last pre-deletion version is in
 | 27 | new | `skills/mattpocock/engineering/diagnosing-bugs/SKILL.md` | +2 lines after the "When exploring the codebase…" paragraph (a blank line and the pointer line): past-session evidence search routes to the `session-search` skill (UTF-8-safe, knows the JSONL structure, caps output) instead of ad-hoc grep/python; branches: bug happened in an earlier run, or behavior changed between runs | mattpocock/skills `skills/engineering/diagnosing-bugs/SKILL.md` | `git diff` vs pinned upstream shows exactly the 2 added lines (alongside patch #6's added sentence) |
 | 28 | new | `skills/mattpocock/engineering/research/SKILL.md` | Step 3 rewritten: delegated placement ("put it somewhere sensible and say where") sharpened to a hard repo-internal bound — findings saved inside the repo's working tree, repo-relative location when no convention exists (e.g. `docs/research-<slug>.md`), path must resolve inside the repo (`git rev-parse --show-toplevel` tells); the file is a committed artifact of the work it informs, not a session temp file; retro candidate 3 — two sessions had written findings to `%TEMP%` | mattpocock/skills `skills/engineering/research/SKILL.md` | `git diff` vs pinned upstream shows exactly the rewritten step-3 line (this file also carries patch #1's 2 added push lines) |
 
-## Excluded from vendor sync
+## Advisory notes (B-class)
 
-Upstream paths intentionally not vendored — curation, not drift. The sync script parses this section and skips the paths silently, so they never surface as pending updates. To re-add one, install directly from upstream: `npx skills add mattpocock/skills --skill <name>` — space form only; the equals form (`--skill=<name>`) is silently discarded by the CLI and falls back to a full install (vercel-labs/skills#2039).
-
-| Source | Excluded upstream path | Reason |
-|---|---|---|
-| mattpocock/skills | `skills/in-progress` | beta category, not needed |
-| mattpocock/skills | `skills/misc` | uncurated one-offs, not needed |
-| mattpocock/skills | `skills/engineering/wizard` | not used by this maintainer |
-| mattpocock/skills | `skills/engineering/triage` | solo dev, no inbound issues to triage |
-| mattpocock/skills | `skills/productivity/to-questionnaire` | not used by this maintainer |
-
-## B-class advisory notes (conditional environment issues — not patched into bodies)
-
-| # | Skill / file | Note | Upstream counterpart |
-|---|---|---|---|
-| 1 | `skills/self/npm-release/SKILL.md` (step 6) | `gh --json` + **jq** pipelines: jq is not installed by default on Windows — install it, or substitute `ConvertFrom-Json` / `Select-String` | self-authored |
-| 2 | `skills/mattpocock/engineering/diagnosing-bugs/SKILL.md` (feedback-loop #2) | **curl** semantics: on PowerShell 5.1 `curl` is an alias for `Invoke-WebRequest`; on PowerShell 7+ use `curl.exe` for real curl. The "Curl / HTTP script" wording stays as-is | mattpocock/skills |
-| 3 | `skills/kill-ai-slop/kill-ai-slop/references/detection.md` | **rg** (ripgrep) command examples: ripgrep is not installed by default on Windows — install it, or translate the patterns to `Select-String` | yetone/kill-ai-slop |
-| 4 | `skills/self/web-debug/SKILL.md` ("When *not* to reach for these tools") | "run it with `bash`" phrasing: bash is not a direct PowerShell command on Windows — invoke it explicitly via Git Bash/WSL (`bash.exe` / `wsl bash`) | self-authored |
-| 5 | `docs/agents/issue-tracker.md` ("GitHub write hiccups") | gh write operations intermittently fail with `unexpected EOF` on the GraphQL POST (no proxy configured — transient network jitter, self-heals in minutes). Doc gives the recovery order: dedupe-check comments first (comment POST is not idempotent), backoff retry ×3, degrade to REST via `gh api --method POST --input -`, then hand the user the manual command — never blind-retry, which duplicates comments | self-authored |
-| 6 | `docs/agents/issue-tracker.md` (PowerShell here-strings) | `@"` must be followed by a newline: inline content is a ParserError (verified — `$t = @"C:\...` fails). For multi-line strings containing Windows paths use a single-quoted string, `--%`, or write the file from Node | self-authored |
+Conditional Windows platform issues, **not patched into skill bodies** — their
+single home moved to [`docs/advisory-notes.md`](docs/advisory-notes.md)
+(ADR-0003).

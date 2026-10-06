@@ -1,0 +1,7 @@
+{
+  "name": "cloudflare",
+  "repo": "cloudflare/security-audit-skill",
+  "url": "https://github.com/cloudflare/security-audit-skill.git",
+  "pin": "c1c8a8c1471069fb0e188eeaff69b8e8db6564a8",
+  "note": "The pin records the provenance trace (spec US14 — source found, so the skill lands under skills/cloudflare/ rather than skills/other/); the source ships unpatched."
+}

@@ -13,10 +13,10 @@ the skill files, fork-style).
 
 | Directory | Source | Notes |
 |---|---|---|
-| `skills/mattpocock/{engineering,productivity}/<name>/` | [mattpocock/skills](https://github.com/mattpocock/skills) | 24 skills (engineering 18 + productivity 6); the upstream `in-progress` / `misc` categories and three unused skills are excluded from vendor sync (see PATCHES.md) |
+| `skills/mattpocock/{engineering,productivity}/<name>/` | [mattpocock/skills](https://github.com/mattpocock/skills) | 24 skills (engineering 18 + productivity 6); the upstream `in-progress` / `misc` categories and three unused skills are excluded from vendor sync (exclusions in `vendor/mattpocock.json`) |
 | `skills/kill-ai-slop/<name>/` | [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop) | kill-ai-slop (upstream path is `skill/`; normalized to the source dir here) |
 | `skills/cloudflare/<name>/` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | security-audit (provenance traced; recorded in the local `~/.agents/.skill-lock.json`) |
-| `skills/awesome-copilot/<name>/` | [github/awesome-copilot](https://github.com/github/awesome-copilot) | create-readme (manual fork: remote README templates localized into `references/`; not in vendor-sync SOURCES, see PATCHES.md) |
+| `skills/awesome-copilot/<name>/` | [github/awesome-copilot](https://github.com/github/awesome-copilot) | create-readme (manual fork: remote README templates localized into `references/`; not in vendor-sync SOURCES, see `vendor/awesome-copilot.json`) |
 | `skills/self/<name>/` | self-authored | de-slop, web-debug, consolidate-strays (general-purpose; de-slop carries `disable-model-invocation: true`, explicit invocation only; consolidate-strays is model-invoked — its description is scoped to stray-consolidation requests and its default run is a read-only dry-run, so other harnesses never fire it spuriously); write-release-notes (general-purpose, model-invoked — description scoped to GitHub Release-notes requests, so other harnesses fire it only when release notes are being written); setup-repo (general-purpose, `disable-model-invocation: true` — one-run per-repo setup driving `setup-matt-pocock-skills` then `setup-coding-standards`, see ADR-0005); npm-release, pi-extension-sync (pi-specific, `disable-model-invocation: true`, so other harnesses never auto-trigger) |
 
 **Discovery depth rule**: the `vercel-labs/skills` CLI discovery constrains only
@@ -31,8 +31,10 @@ not depth-limited.
 The repo was imported byte-for-byte (105 files) from the current
 `~/.agents/skills` snapshot, so it carries the 4 baseline patches the snapshot
 already had. Every deviation from upstream — the baseline and new A-class
-patches plus the B-class environment notes — is recorded in
-[`PATCHES.md`](PATCHES.md) at the repo root (`self/` skills are self-authored and
+patches — is recorded in
+[`PATCHES.md`](PATCHES.md) at the repo root; B-class environment notes live in
+[`docs/advisory-notes.md`](docs/advisory-notes.md) and per-source pins and
+exclusions in [`vendor/`](vendor/README.md) (`self/` skills are self-authored and
 have no upstream); upstream sourced files were verified file-by-file. The
 baseline patches:
 
@@ -81,7 +83,7 @@ node scripts/vendor-sync.mjs merge
 
 Patched files (`PATCHES.md` A-class) are never overwritten; a patched file is
 reported as needing a merge only when upstream actually changed it since the
-pinned commit in `PATCHES.md`'s upstream-references table. The `merge`
+pinned commit in `vendor/<source>.json`. The `merge`
 subcommand then rebuilds each such three-way merge (`git merge-file`, base =
 the pinned commit) and writes the result only when the local patch survives
 mechanically — its changed lines identical — leaving conflicts, reshaped
