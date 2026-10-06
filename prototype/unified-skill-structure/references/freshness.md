@@ -3,8 +3,8 @@
 **Skeleton — full prose lands with the follow-up ticket.** This is the
 detection-facing branch: read the pending-update issue, re-derive from a fresh
 dry-run, and close stale issues. Detection itself stays where map #25 put it —
-the daily CI freshness check (unattended, read-only); the skill is the only
-*repair* entry and adds the on-demand read + the stale-close case. Coverage:
+the daily CI Vendor freshness check (unattended, read-only); the skill is the
+only *repair* entry and adds the on-demand read + the stale-close case. Coverage:
 edge-case inventory C1–C8.
 
 ## Purpose

@@ -30,8 +30,9 @@ run. (B14, B15)
    record's frontmatter)
 4. **Re-run the report** — every recovered skill must read **current**; nothing
    in the store has changed. (B13, B16)
-5. **Propose commit, push, distribute — in that order**, the distribution
-   gated on zero strays (distribute branch).
+5. **Make the finishing proposal** — the router's shared rule 6 quartet
+   (commit → push → distribution), the distribution gated on zero strays
+   (distribute branch).
 
 ## Cross-branch touches
 

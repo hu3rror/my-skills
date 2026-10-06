@@ -18,8 +18,9 @@ branch maintains.
    (`gh issue list --state open --label pending-update`), view its body; run
    `node scripts/vendor-sync.mjs --dry-run`; classify every pending item
    (added / updated / removed kept-local / patched-upstream-modified /
-   patched-upstream-removed). Nothing pending + open issue anyway → stale-close
-   via the freshness branch and stop. (C4, C7)
+   patched-upstream-removed). Nothing pending + open issue anyway → this is the
+   stale case — the close is owned by `freshness.md` step 3; follow it, then
+   stop. (C4, C7)
 2. **Run the sync** (`node scripts/vendor-sync.mjs`, real mode). It copies
    added/updated files, never touches patched files, never deletes. (A1, A5, A8)
 3. **Resolve the pending items.**
@@ -35,8 +36,9 @@ branch maintains.
 5. **Verify.** `node --test scripts/*.test.mjs`; re-run the dry-run — it must
    read `changed=false` with nothing pending (the state that lets the freshness
    check close the issue). (A28, C5)
-6. **Propose commit, push, close** — one-write issue close per
-   docs/agents/issue-tracker.md, `git status --porcelain` clean first.
+6. **Make the finishing proposal** — the router's shared rule 6 quartet
+   (commit → push → issue close), the close being the one-write stale/completed
+   close per docs/agents/issue-tracker.md, `git status --porcelain` clean first.
 
 ## Cross-branch touches
 

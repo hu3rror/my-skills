@@ -56,10 +56,10 @@ fire it spuriously. The proposed text (in the SKILL.md frontmatter):
 > records, freshness, and distribution to the canonical skills store. One entry;
 > the branch is picked from the request. Use when the user asks to sync or update
 > vendored skills, recover or consolidate stray skills, resolve a pending-update
-> issue, record a patch deviation, check vendor freshness, or distribute skills
-> to the store. Every run starts with the read-only stray dry-run; all remote or
-> destructive writes (git push, gh issue ops, store changes) wait on the user's
-> go-ahead.
+> issue, record a patch deviation, check vendor freshness, distribute skills to
+> the store, or retire a skill from it. Every run starts with the read-only
+> stray dry-run; all remote or destructive writes (git push, gh issue ops, store
+> changes) wait on the user's go-ahead.
 
 Spurious-fire cost is bounded by design: the first step of any run is a
 read-only dry-run, and every write waits on the user — a wrongly-fired run
@@ -69,9 +69,8 @@ proposes, never executes.
 
 Deleting `skills/self/consolidate-strays/` and `skills/self/my-skills-vendor-sync/`
 from the repo is **not** enough to retire them: `npx skills add` does **not**
-prune the canonical store (verified from `src/add.ts`: the install loop
-iterates only the selected skills; the v1.5.8 deleted-skill cleanup lives in
-`update` — R1). Retirement = `git rm` the repo copies **and** `npx skills
+prune the canonical store (full evidence in `references/distribute.md` step 4 /
+R1 research). Retirement = `git rm` the repo copies **and** `npx skills
 remove <name>` on the store side, plus the README/GLOSSARY/ADR/scripts prose
 updates — all executed in the migration (map #18), when the unified skill
 replaces them. Verified: no skill body references either (only README /
@@ -80,10 +79,10 @@ GLOSSARY / ADR-0002 / ADR-0004).
 ### 5. CLI pin in the distribute branch — pin
 
 `npx skills@1.7.0` (current latest, matches the machine's npx cache). Accepting
-drift was rejected: the CLI churns ~1–2 releases/week with a known class of
-silent flag-drop failures (#2039), and the distribute step is write-heavy and
-non-reproducible unpinned (R1's cheap-hardening recommendation). The pin lives
-in `references/distribute.md`, bumped deliberately per upgrade.
+drift was rejected — rationale in `references/distribute.md` step 2 (R1
+research, `docs/research-r1-skills-cli.md`: weekly churn + the #2039 class of
+silent flag-drop failures make an unpinned write-heavy step non-reproducible).
+Bumped deliberately per upgrade.
 
 ## Layout (as it will land at migration)
 
@@ -117,6 +116,11 @@ ticket.
 
 ## Edge-case coverage (acceptance trace, inventory #28)
 
+EC codes are the numbered edge cases from the inventory ticket — A1–A28
+(vendor sync), B1–B16 (stray recovery), C1–C8 (freshness), D1–D10 (patch
+records) — which the redesign must pass item for item (issue #28, resolution
+comment).
+
 | Group | ECs | Home |
 |---|---|---|
 | A1–A28 vendor sync | all | `vendor-sync.md` |
@@ -134,3 +138,6 @@ every distribution, never after" across all branches.
   skill is distributable).
 - Exact `npx skills remove` invocation for store-side retirement (CLI churn).
 - `scripts/verify-patch-records.mjs` wiring into script-tests CI.
+- GLOSSARY: add **patch record** (per-patch deviation record at `patches/`,
+  #22) as the term that replaces **Patch manifest** at migration; the
+  prototype already uses it.

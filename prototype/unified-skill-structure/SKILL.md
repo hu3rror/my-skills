@@ -5,17 +5,16 @@ description: >-
   records, freshness, and distribution to the canonical skills store. One entry;
   the branch is picked from the request. Use when the user asks to sync or update
   vendored skills, recover or consolidate stray skills, resolve a pending-update
-  issue, record a patch deviation, check vendor freshness, or distribute skills
-  to the store. Every run starts with the read-only stray dry-run; all remote or
-  destructive writes (git push, gh issue ops, store changes) wait on the user's
-  go-ahead.
+  issue, record a patch deviation, check vendor freshness, distribute skills to
+  the store, or retire a skill from it. Every run starts with the read-only
+  stray dry-run; all remote or destructive writes (git push, gh issue ops, store
+  changes) wait on the user's go-ahead.
 ---
 
 # my-skills maintenance — one entry for the aggregation repo
 
-The single entry for every maintenance flow of this aggregation repo (GLOSSARY:
-**vendor sync**, **stray recovery**, **patch records**, **freshness**,
-**distribution chain**). One discoverable skill, five branches — each branch's
+The single entry for every maintenance flow of this aggregation repo (flow
+vocabulary per GLOSSARY). One discoverable skill, five branches — each branch's
 procedure lives in a disclosed reference loaded only when that branch fires.
 This skill replaces `consolidate-strays` and `my-skills-vendor-sync`; those two
 are retired when this lands (map #18 migration).
@@ -38,12 +37,13 @@ follow-up ticket (map #18 "unified skill's full branch content").
    reference for drafting skill content), then run the branch.
 5. **Vocabulary**: name concepts with the GLOSSARY terms (`consolidated copy`,
    `pending update`, `distribution chain`, …), never drifted synonyms.
+6. **The finishing proposal**: every branch ends by proposing the same quartet —
+   commit → push → issue close / distribution — as one proposal, and stops for
+   the user's go-ahead. Nothing remote or destructive happens without it.
 
 ## Always run first — the stray check
 
-Every run starts with the mandatory stray dry-run (map #25: on-demand store
-drift detection — the only guard for the distribution clobber window; no local
-scheduled task):
+Every run starts with the mandatory stray dry-run (map #25):
 
 ```
 node scripts/consolidate-strays.mjs
@@ -73,6 +73,5 @@ branches in order — vendor-sync → distribute — never in parallel.
 
 ## Done
 
-When the branch's completion criterion is met, propose the finishing steps
-(commit / push / issue close / distribution, per branch) and stop for the
-user's go-ahead. Nothing remote or destructive happens without it.
+When the branch's completion criterion is met, make the finishing proposal
+(shared rule 6) and stop. Nothing remote or destructive happens without it.
