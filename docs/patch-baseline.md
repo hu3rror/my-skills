@@ -1,6 +1,6 @@
-# Patch baseline — 28 A-class rows vs pinned commits
+# Patch baseline — the A-class patch rows vs their pinned commits
 
-Mechanical baseline for the migration of the 28 A-class patch rows in `PATCHES.md`
+Mechanical baseline for the migration of the A-class patch rows in `PATCHES.md`
 (map ticket #18: _Redesign skill management_). Produced 2026-10-06.
 
 For each A-class row: the file's pinned upstream commit (from the **Upstream references**
@@ -9,6 +9,14 @@ table) was fetched, the recorded file was diffed against the pinned blob, and th
 migration's completeness input (ticket _Patch record format prototype_) and the acceptance
 comparison after migration: a migrated record must reproduce these same hunks against the
 same pins.
+
+> **Count note.** The originating issue (#21) and the map (#18) say "28 A-class patch rows…
+> 26 diff-verifiable, 2 behavioral". The current `PATCHES.md` A-class table holds **27 rows**,
+> numbered 1–28 with **#5 absent** (dropped in commit `8bdc964`, curation of the
+> distribution set); the numbering gap is preserved so historical rows keep their
+> identities. Verifying the 27 present rows: **25 diff-asserted + 2 behavioral (#7, #15)** —
+> i.e. **25 of 25 diff claims hold**, not 26. The migration should reconcile the manifest
+> count against the issue/map "28" figure.
 
 ## Method
 
@@ -24,6 +32,10 @@ same pins.
   checkout line-ending translation can never surface as drift. Byte-compare otherwise.
 
 ## Verdict summary
+
+A row's "diff assertion" is the `Verification method` claim in `PATCHES.md` that says
+"`git diff` vs pinned upstream shows exactly …" — checked here hunk-by-hunk against the
+actual diff. Rows verified behaviorally instead (no diff assertion) are marked `—`.
 
 | # | File | Claim | Holds today |
 |---|---|---|---|
@@ -55,9 +67,9 @@ same pins.
 | 27 | `skills/mattpocock/engineering/diagnosing-bugs/SKILL.md` | exactly the 2 added lines (alongside #6) | ✅ |
 | 28 | `skills/mattpocock/engineering/research/SKILL.md` | exactly the rewritten step-3 line (file also carries #1) | ✅ |
 
-**26 of 26 diff-assertion rows hold today** against their pinned commits. Rows #7 and #15
+**25 of 25 diff-assertion rows hold today** against their pinned commits. Rows #7 and #15
 are behavioral (self-authored, no upstream diff baseline) and are out of the diff assertion,
-as the issue notes.
+as the issue notes. (27 rows present in the manifest; see the count note above.)
 
 ## Actual diff hunks — multi-patch files
 
@@ -260,8 +272,10 @@ migration can split them into per-patch records unambiguously.
   newline vs the pinned blob (a zero-content byte difference on the final step-6 line). It
   does not affect the #10 claim and should be cleaned up opportunistically, but a byte-exact
   artifact comparison during migration will trip on it.
-- No other file shows a claim-unrelated hunk. All 26 diff-assertion diffs contain exactly
+- No other file shows a claim-unrelated hunk. All 25 diff-assertion diffs contain exactly
   the lines their rows describe.
+- **Count reconciliation**: the manifest's 25 diff-asserted rows is one fewer than the
+  issue/map figure of "26 diff-verifiable" because #5 is absent from the current table.
 
 ## Repro
 
