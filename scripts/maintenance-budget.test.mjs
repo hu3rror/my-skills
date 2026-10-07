@@ -17,6 +17,10 @@
 //     patch-record verifier + tests (verify-patch-records.{mjs,.test.mjs})
 //     and the consolidate-strays row-template→record-pointer change landed
 //     inside the total (docs/maintenance-budget.md records date + reason).
+//     ADR-0009 (2026-10-07): the repo-location guard added
+//     scripts/repo-guard.{mjs,.test.mjs} and guard wiring in
+//     consolidate-strays / vendor-sync / verify-patch-records (+226 lines,
+//     budget 4101 → 4327, documented in docs/maintenance-budget.md).
 //   - CI jobs: 3, one per workflow (script-tests, vendor-freshness-check,
 //     vendor-sync); #25 drops vendor-sync.yml at migration, so the
 //     post-migration surface is 2. The budget anchors at today's count.
@@ -37,7 +41,7 @@ import { fileURLToPath } from "node:url";
 const SCRIPTS = dirname(fileURLToPath(import.meta.url));
 const WORKFLOWS = join(SCRIPTS, "..", ".github", "workflows");
 
-const CODE_TESTS_BUDGET = 4101;
+const CODE_TESTS_BUDGET = 4327;
 const JOBS_BUDGET = 3;
 
 // wc -l parity: count newlines, not split chunks, so the number matches the

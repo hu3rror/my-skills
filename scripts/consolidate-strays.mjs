@@ -37,6 +37,7 @@ import {
 import { homedir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertRepoDir } from "./repo-guard.mjs";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_REPO = resolve(SCRIPT_DIR, "..");
@@ -480,7 +481,11 @@ export function main(argv = process.argv.slice(2)) {
     console.log(usage());
     return;
   }
+  // The script-relative repo default is only trustworthy while the script
+  // travels with the aggregation repo; a bare copy running outside it must
+  // refuse loudly (ADR-0009) instead of classifying against a wrong target.
   try {
+    if (!args.repoExplicit) assertRepoDir(args.repo, { flag: "--repo" });
     if (args.apply !== undefined) {
       const result = applyStray({
         store: args.store,
@@ -516,6 +521,7 @@ function parseArgs(argv) {
     lock: defaultLock(),
     repo: DEFAULT_REPO,
     to: "other",
+    repoExplicit: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
@@ -524,7 +530,10 @@ function parseArgs(argv) {
     if (value === undefined) throw new Error(`missing value for ${flag}`);
     if (flag === "--store") args.store = value;
     else if (flag === "--lock") args.lock = value;
-    else if (flag === "--repo") args.repo = value;
+    else if (flag === "--repo") {
+      args.repo = value;
+      args.repoExplicit = true;
+    }
     else if (flag === "--apply") args.apply = value;
     else if (flag === "--to") args.to = value;
     else throw new Error(`unknown option: ${flag}`);
@@ -552,7 +561,7 @@ deviation must first be recorded as a per-patch record at patches/<source>/
 Options:
   --store <dir>   canonical skills store (default: ~/.agents/skills)
   --lock <file>   distribution lock file (default: ~/.agents/.skill-lock.json)
-  --repo <dir>    aggregation repo root (default: this script's parent)
+  --repo <dir>    aggregation repo root (default: this script's parent, verified)
   --apply <name>  copy the named new stray into the repo (idempotent)
   --to <home>     destination home with --apply: other (default) or self
   -h, --help      show this help

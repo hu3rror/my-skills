@@ -21,8 +21,19 @@ import {
 import { dirname, join, relative, resolve, sep } from "node:path";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
+import { assertRepoDir } from "./repo-guard.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+// The script derives ROOT from its own location — correct while it travels
+// with the aggregation repo, silent garbage when run from a copy outside it.
+// Module-level guard (ADR-0009): refuse loudly instead of syncing or merging
+// against a wrong root.
+try {
+  assertRepoDir(ROOT);
+} catch (err) {
+  console.error(err.message);
+  process.exit(1);
+}
 const PATCHES_DIR = join(ROOT, "patches");
 const VENDOR_DIR = join(ROOT, "vendor");
 const DRY_RUN = process.argv.includes("--dry-run");

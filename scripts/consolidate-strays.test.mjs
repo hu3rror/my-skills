@@ -9,6 +9,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -840,6 +841,32 @@ test("CLI dry-run reports a modified stray with a diff and a record pointer, tou
     assert.deepEqual(snapshot(d.store), storeBefore);
   } finally {
     rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
+test("CLI run from outside the aggregation repo fails loudly instead of assuming a repo (ADR-0009)", () => {
+  // The script is copied to a scratch dir so its script-relative repo default
+  // (the script's parent) is not the aggregation repo: the guard must refuse
+  // with a pointer error rather than run a classification against a wrong
+  // target. --store/--lock point at temp fixtures; no --repo is passed.
+  const run = mkdtempSync(join(tmpdir(), "consolidate-run-"));
+  try {
+    copyFileSync(SCRIPT, join(run, "consolidate-strays.mjs"));
+    copyFileSync(join(dirname(SCRIPT), "repo-guard.mjs"), join(run, "repo-guard.mjs"));
+    const store = mkdtempSync(join(run, "store-"));
+    const lock = join(run, ".skill-lock.json");
+    writeFileSync(lock, JSON.stringify({ version: 3, skills: {} }));
+
+    const res = spawnSync(
+      process.execPath,
+      [join(run, "consolidate-strays.mjs"), "--store", store, "--lock", lock],
+      { encoding: "utf8" }
+    );
+    assert.equal(res.status, 1);
+    assert.match(res.stderr, /consolidate-strays: not the my-skills aggregation repo/);
+    assert.match(res.stderr, /--repo/);
+  } finally {
+    rmSync(run, { recursive: true, force: true });
   }
 });
 

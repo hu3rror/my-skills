@@ -8,6 +8,10 @@ The version-controlled single home of every shared agent skill, organized by ups
 The version-controlled home of all shared skills, organized by upstream source; the only content source for the distribution chain.
 _Avoid_: skills store (confused with the canonical skills store), my-skills (this repo's proper name, not the concept), upstream (reserved for the external vendored sources)
 
+**Repo anchor** (仓库锚点):
+The machine-local record of where the aggregation repo lives (`~/.agents/.my-skills-repo`, one line), read at the start of every maintenance run so the flow never assumes the working directory is the repo; rewritten only when the user reports a relocation or re-clones (ADR-0009).
+_Avoid_: repo path (the value, not the mechanism), pointer file (implementation name)
+
 **Consolidated copy**:
 A skill's file as it lives in the aggregation repo — the middle copy between the upstream original and the canonical-store copy, and the one that carries patches.
 _Avoid_: copy (too generic), patched copy (used but undefined)

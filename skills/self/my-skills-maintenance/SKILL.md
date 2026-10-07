@@ -23,12 +23,21 @@ branch fires. This skill replaces `consolidate-strays` and
 
 ## Shared rules — every branch
 
-1. **Locate the repo**: confirm you are at the aggregation repo root (the git
-   root owning `scripts/vendor-sync.mjs`); ask the user if it has moved.
+1. **Locate the repo anchor (`$REPO`)** — never assume the working directory
+   is the repo. Read the repo anchor `~/.agents/.my-skills-repo` (one line:
+   the aggregation repo root, written on a previous run, ADR-0009). Verify it:
+   the directory exists, `git -C "<path>" remote get-url origin` ends with
+   `/my-skills` (the repo's identity — a fork or a moved clone passes, any
+   other repo fails; the scripts re-verify at runtime, so a stale anchor fails
+   loudly, never silently), and it owns `scripts/vendor-sync.mjs`. Found →
+   bind `$REPO` and run every command from it — `node scripts/...` below means
+   `"$REPO"/scripts/...`. Missing or stale → ask the user for the new location
+   (or offer to re-clone from GitHub) and write their answer back into
+   `~/.agents/.my-skills-repo` (one line).
 2. **Propose before you write**: every git write, gh issue op, and store
    change is proposed to the user and waits for explicit go-ahead (AGENTS.md
    safety valves). The default run is read-only.
-3. **Verify, then report**: script tests (`node --test scripts/*.test.mjs`)
+3. **Verify, then report**: script tests (`node --test "$REPO"/scripts/*.test.mjs`)
    and a fresh dry-run are the verification levers; `git status --porcelain`
    clean before any issue op (docs/agents/issue-tracker.md).
 4. **Editing skill content?** Load `writing-for-agents` first (the reference
@@ -44,7 +53,7 @@ branch fires. This skill replaces `consolidate-strays` and
 Every run starts with the mandatory stray dry-run (map #25):
 
 ```
-node scripts/consolidate-strays.mjs
+node "$REPO/scripts/consolidate-strays.mjs"
 ```
 
 Read the whole report (default is a read-only dry-run): every store skill

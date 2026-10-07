@@ -60,10 +60,21 @@ it replaces, including the prep that already serves it.
 - #23 rehoming (`c9715dd`): `vendor-sync.mjs` 482 → 797 (+315), `vendor-sync.test.mjs` 188 → 230 (+42);
 - #24 merge subcommand (`4db8749`): `vendor-sync-merge.test.mjs` (+352).
 
-**Budget rule**: total script lines (code + tests) ≤ **4101** (re-measured at
-the 2026-10-06 migration, formerly 3059 — see the re-measurement note above).
+**Budget rule**: total script lines (code + tests) ≤ **4327** (re-measured at
+the 2026-10-06 migration, formerly 3059 — see the re-measurement note above;
+raised from 4101 on 2026-10-07 for the ADR-0009 repo-location guard — see the
+note below).
 Bumping it is a **deliberate, documented act** (date + reason here and in the
 guard).
+
+### Repo-location guard (ADR-0009, 2026-10-07)
+
+Budget raised to **4327** (+226 over 4101) for the repo-location guard:
+`scripts/repo-guard.mjs` + `repo-guard.test.mjs` (the shared shape+identity
+check the maintenance scripts derive their root from) and the guard wiring in
+`consolidate-strays.mjs` / `vendor-sync.mjs` / `verify-patch-records.mjs` +
+one CLI test in `consolidate-strays.test.mjs`. Recorded per the bump rule
+(value raised in the guard test; date + reason here).
 
 ### CI surface
 
@@ -121,9 +132,11 @@ unified skill.
    attention is needed (conflict / reshaped / adopted / no-pin / error), with
    the evidence kept in the reported temp dir. No budget is spent making it
    one-command; the budget spent is bounded (the subcommand already exists
-   and its tests are inside the 4101 budget).
+   and its tests are inside the budget).
 
-4. **Complexity budget.** Code+tests ≤ 4101 lines (re-measured at migration),
+4. **Complexity budget.** Code+tests ≤ 4327 lines (4101 at the 2026-10-06
+   migration, raised 2026-10-07 for the ADR-0009 repo-location guard — see the
+   note above),
    CI jobs ≤ 3 (2 after the
    #25 drop), common-case step counts only decrease. Every rule above is
    either machine-enforced (guard test) or acceptance-traced at migration
