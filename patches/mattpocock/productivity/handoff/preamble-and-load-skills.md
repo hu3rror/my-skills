@@ -21,7 +21,7 @@ A handoff is only safe when the incoming agent stops to align before working; an
 +++ b/skills/productivity/handoff/SKILL.md
 @@ -7,7 +7,11 @@ disable-model-invocation: true
  
- Write a handoff document summarising the current conversation so a fresh agent can continue the work. Save to the temporary directory of the user's OS - not the current workspace.
+ Write a handoff document summarising the current conversation so a fresh agent can continue the work. Save to the temporary directory of the user's OS (`$TMPDIR`, else `/tmp`; `%TEMP%` on Windows) - not the current workspace.
  
 -Include a "suggested skills" section in the document, naming which skills the next agent should call the Skill tool for.
 +Open the document with a handover preamble addressed to the next agent, worded to force an alignment stop before any work:

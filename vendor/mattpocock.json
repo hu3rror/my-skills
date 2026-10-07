@@ -2,7 +2,7 @@
   "name": "mattpocock",
   "repo": "mattpocock/skills",
   "url": "https://github.com/mattpocock/skills.git",
-  "pin": "4588b32ecab9ecc9fc8cc6b6c5e7d675b6004b0d",
+  "pin": "f3fc5632f401156837ee3872f14fe33ccf1024ea",
   "releaseRepo": "mattpocock/skills",
   "exclusions": [
     { "path": "skills/in-progress", "reason": "beta category, not needed" },
