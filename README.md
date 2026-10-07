@@ -148,7 +148,7 @@ place; recovered edits go live only after commit + push + a distribution run.
 ## Related docs
 
 - Operational maintenance runbook (how to verify + what to do per case):
-  `docs/agents/maintenance.md`
+  [docs/agents/maintenance.md](docs/agents/maintenance.md)
 - Maintenance spec and migration plan:
-  `docs/specs/powershell-portability-and-maintenance.md`
-- Repo collaboration conventions: `AGENTS.md`, `docs/agents/`
+  [docs/specs/powershell-portability-and-maintenance.md](docs/specs/powershell-portability-and-maintenance.md)
+- Repo collaboration conventions: [AGENTS.md](AGENTS.md), [docs/agents/](docs/agents/)
