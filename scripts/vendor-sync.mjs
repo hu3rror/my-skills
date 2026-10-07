@@ -69,6 +69,10 @@ const SOURCES = [
   },
 ];
 
+// Verdicts that leave work for the human: the subcommand exits 1 when any
+// file lands here, a stop-and-report signal for the driving skill.
+const MERGE_ATTENTION_VERDICTS = new Set(["conflict", "error", "reshaped", "adopted", "no-pin"]);
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main();
 }
@@ -572,10 +576,6 @@ function toAbs(repoRel) {
 // The mechanics used to live in the my-skills-vendor-sync skill body as a
 // Git Bash block; Node spawns git directly, so the subcommand runs from any
 // shell and is deterministic and testable.
-
-// Verdicts that leave work for the human: the subcommand exits 1 when any
-// file lands here, a stop-and-report signal for the driving skill.
-const MERGE_ATTENTION_VERDICTS = new Set(["conflict", "error", "reshaped", "adopted", "no-pin"]);
 
 function mergeMain() {
   const { patchedSet, pins, excludedRoots } = loadManifest("merge");
