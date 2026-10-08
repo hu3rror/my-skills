@@ -4,8 +4,9 @@
 # skill `my-skills-maintenance` (vendor-sync.yml was dropped at map #18); a
 # dry-run never overwrites a patch record (`patches/`). No keepalive: GitHub
 # auto-disables scheduled workflows in public repos after
-# 60 days without repository activity (commits or manual workflow runs); a
-# any repository activity (a commit or the workflow's own manual dispatch) resets that clock.
+# 60 days without repository activity (commits or manual workflow runs); any
+# repository activity (a commit or the workflow's own manual dispatch) resets
+# that clock.
 name: vendor-freshness-check
 
 on:
@@ -30,11 +31,22 @@ jobs:
           node-version: 22
 
       - name: Dry-run vendor sync
+        # Same transport-noise retry as the script-tests verifier step: the
+        # dry-run clones every upstream at its pin, and a transient clone/TLS
+        # failure would otherwise redden a daily run for no reason. A genuinely
+        # failed source still exits non-zero after the last attempt, so the job
+        # fails instead of opening an issue on incomplete data; the log is
+        # written once, from the successful attempt.
         run: |
-          set -o pipefail
-          # A failed source exits non-zero (pipefail) and fails the job instead
-          # of opening an issue on incomplete data.
-          node scripts/vendor-sync.mjs --dry-run | tee /tmp/vendor-sync.log
+          for i in 1 2 3; do
+            if node scripts/vendor-sync.mjs --dry-run > /tmp/vendor-sync.log; then
+              cat /tmp/vendor-sync.log
+              exit 0
+            fi
+            echo "vendor-sync dry-run attempt $i failed; retrying in $((i * 10))s"
+            sleep $((i * 10))
+          done
+          exit 1
 
       # gh needs the token passed explicitly as GH_TOKEN (newer gh CLI in the
       # runner image no longer falls back to the GITHUB_TOKEN env var); env
@@ -46,3 +58,4 @@ jobs:
         run: node scripts/vendor-freshness-check.mjs /tmp/vendor-sync.log
         env:
           GH_TOKEN: ${{ github.token }}
+

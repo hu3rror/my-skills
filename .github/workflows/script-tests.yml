@@ -30,4 +30,15 @@ jobs:
         run: node --test scripts/*.test.mjs
 
       - name: Verify patch records
-        run: node scripts/verify-patch-records.mjs
+        # The verifier clones upstream at the pins, so a transient network/TLS
+        # hiccup fails a push that touched nothing in patches/. Seen on
+        # 2026-10-08: runs failing with 18, 17 and 1 unverifiable records, each
+        # passing on retry with no code change. A wrong hunk is deterministic, so
+        # retrying keeps the signal and only absorbs the transport noise.
+        run: |
+          for i in 1 2 3; do
+            if node scripts/verify-patch-records.mjs; then exit 0; fi
+            echo "verify-patch-records attempt $i failed; retrying in $((i * 10))s"
+            sleep $((i * 10))
+          done
+          exit 1
