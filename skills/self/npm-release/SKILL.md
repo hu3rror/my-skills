@@ -99,4 +99,4 @@ npm stage reject <stage-id>     # 错误暂存回滚
 
 ## Related skills
 
-- **pi-extension-sync** — 当本次发布是为了发布一次 pi SDK 同步(版本对齐/镜像语义跟进)时,验收要点(行为级改动都需用户签过字、README 兼容性说明、ADR)在 sync skill 里;发布前先用它核对改动是否齐整。SDK 同步/类型修复类发布默认 patch(semver 三问见步骤 6)。
+- **my-pi-extension-maintenance** — 当本次发布是为了发布一次 pi SDK 同步(版本对齐/镜像语义跟进)时,验收要点(行为变化无法避免时才需用户确认、README 兼容性说明)在 maintenance skill 里;发布前先用它核对改动是否齐整。SDK 同步/类型修复类发布默认 patch(semver 三问见步骤 6)。
