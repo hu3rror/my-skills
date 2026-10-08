@@ -93,10 +93,10 @@ _Avoid_: seeding, seed source (the gardening metaphor; import is the operation)
 A patch carried into the repo by the snapshot import (four: research/wayfinder push notes, quoted `@me`, kill-ai-slop `disable-model-invocation`).
 
 **A-class patch**:
-A must-fix platform patch applied to a consolidated copy (three: diagnosing-bugs, npm-release temp path, GitLab tracker quoting).
+A must-fix platform patch applied to a consolidated copy. The set is not counted here: `patches/**/*.md` (minus its README) is the manifest, and the three platform rows it started from are in `docs/patch-baseline.md`.
 
 **B-class advisory note**:
-A conditional environment issue recorded in `docs/advisory-notes.md`, not patched into the skill body (four: jq, curl alias, rg, web-debug bash phrasing).
+A conditional environment issue recorded in `docs/advisory-notes.md`, not patched into the skill body. The table there is the list.
 
 ## Maintenance budget
 

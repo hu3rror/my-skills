@@ -228,6 +228,7 @@ read directly — no per-agent links.
   discipline is preserved. Rationale: upstream sources (mattpocock,
   kill-ai-slop, cloudflare) commit between releases, so a notification-only
   check is worth a scheduled run; it never writes files.
+- **R1 confirmation points during implementation** (per `~/.pi/agent/AGENTS.md`):
   push of `my-skills` (#1), `git rm` + directory removal + `.gitignore` +
   AGENTS.md edits on `~/.pi` (#8, #4), push of `~/.pi` (#1). The re-distribution
   step is local install only and needs no R1 confirmation.
@@ -236,6 +237,26 @@ read directly — no per-agent links.
   bash。执行 skill/文档中的 bash 或 Unix 命令前，先转译为 PowerShell 等效；
   bash 专属脚本（wizard、hitl-loop 模板等）经 bash.exe/wsl.exe 显式调用，不设
   默认工具。平台差异清单以 my-skills 仓库的逐补丁记录（patches/）为准。`
+- **Revision (per-OS temp dirs, 2026-10-08)**: supersedes the temp-path part of
+  US4, A-class Must-fix #3 ("`npm-release`: temp file path `/tmp/...` →
+  `$env:TEMP\...`") and the Testing line `gh release create --notes-file
+  "$env:TEMP\..."`. The temp file now resolves per OS — `$env:TEMP` on Windows;
+  `$TMPDIR`, else `/tmp`, on Linux / WSL / macOS — because the Windows-only
+  form is undefined outside Windows and a `/tmp` fallback lands at `C:\tmp\...`
+  once a Windows-native tool (node, python, pi's `write`) receives it. The same
+  resolution replaced the `$TEMP` mandate in `handoff`,
+  `improve-codebase-architecture`, the `setup-matt-pocock-skills` tracker
+  templates and this repo's own tracker doc; the release-notes temp file now
+  belongs to `write-release-notes` (extracted from `npm-release` step 7).
+  Records: `patches/self/write-release-notes/windows-temp-path.md` (restated),
+  `patches/mattpocock/**/temp-dir-portable.md` (new), the three tracker records
+  updated — commit `a7ec369`. Advisory note #7 was retired: the temp dir is now
+  an A-class body patch (ADR-0003), so the note's `$env:TEMP`-under-PowerShell
+  workaround has no remaining home.
+- **Revision (skill rename, 2026-10-08)**: `pi-extension-sync` was renamed to
+  `my-pi-extension-maintenance` (commit `9fe8776`). The name used in the
+  Solution, US12 and the Windows-config decisions above refers to that skill;
+  GLOSSARY's **pi-specific skill** entry carries the current name.
 
 ## Chinese Summary (non-authoritative)
 

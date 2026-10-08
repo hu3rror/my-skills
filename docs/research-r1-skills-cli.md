@@ -1,5 +1,11 @@
 # Research R1: `npx skills` CLI (vercel-labs/skills) — capabilities relevant to the my-skills distribution chain
 
+> **Post-migration note (map #18)**: `PATCHES.md` was deleted at the map #18
+> migration — the patch manifest is now `patches/**/*.md` (minus its README),
+> and the B-class notes live in `docs/advisory-notes.md`. Every `PATCHES.md`
+> mention below (lines 5, 37, 44, 47–52 at the time of writing) describes the
+> research-time state, not a file that still exists.
+
 **Method**: per `skills/mattpocock/engineering/research/SKILL.md` (hu3rror/my-skills, patch #1/#28 — this repo's fork of the mattpocock research skill), all claims below were traced to primary sources: the vercel-labs/skills README, the CLI's own help text and source (`src/cli.ts`, `src/add.ts`, `src/source-parser.ts`, `src/skill-lock.ts`, `src/local-lock.ts`, `src/installer.ts`, `src/skills.ts` on `main`), the npm registry metadata, GitHub releases, and GitHub issue #2039 (+ timeline/comments). Snapshot date: this session; latest release observed **v1.7.0 (2026-09-17)**; repo `main` pushed 2026-10-05.
 
 **Bottom line for the repo's ADR-0002**: the ADR's premise — "vercel-labs/skills has no overlay or patch mechanism" — is **still current** as of v1.7.0. The CLI additionally **copies and hashes entire skill folders**, so repo-internal records placed inside a skill folder *would* be distributed to `~/.agents/skills`; they belong where this repo already keeps them (repo root, `docs/`, `scripts/`, `PATCHES.md`).
