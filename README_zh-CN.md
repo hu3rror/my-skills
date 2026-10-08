@@ -11,7 +11,7 @@
 | `skills/mattpocock/{engineering,productivity}/<name>/` | [mattpocock/skills](https://github.com/mattpocock/skills) | 24 个技能（engineering 18 + productivity 6）；上游 `in-progress` / `misc` 分类及三个未使用的技能已从 vendor sync 排除（排除项见 `vendor/mattpocock.json`） |
 | `skills/kill-ai-slop/<name>/` | [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop) | kill-ai-slop（上游路径为 `skill/`，聚合后归一为来源目录） |
 | `skills/cloudflare/<name>/` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | security-audit（来源已溯源，记录于本机 `~/.agents/.skill-lock.json`） |
-| `skills/self/<name>/` | 自建 | de-slop、web-debug、my-skills-maintenance（通用；de-slop 带 `disable-model-invocation: true`，仅显式调用；my-skills-maintenance 为模型调用——聚合仓库维护流程的统一入口，description 限定在仓库维护词汇，且首步只读 dry-run，其他 harness 不会误触发）；write-release-notes（通用，模型调用——description 限定在 GitHub Release 发布说明请求，只在写发布说明时触发）；setup-repo（通用，`disable-model-invocation: true`——一次性仓库 setup，驱动 `setup-matt-pocock-skills` 再 `setup-coding-standards`，见 ADR-0005）；npm-release、my-pi-extension-maintenance（pi 专属，带 `disable-model-invocation: true`，避免其他 harness 自动触发） |
+| `skills/self/<name>/` | 自建 | de-slop、web-debug、my-skills-maintenance（通用；de-slop 带 `disable-model-invocation: true`，仅显式调用；my-skills-maintenance 为模型调用——聚合仓库维护流程的统一入口，description 限定在仓库维护词汇，且首步只读 dry-run，其他 harness 不会误触发）；write-release-notes（通用，模型调用——description 限定在 GitHub Release 发布说明请求，只在写发布说明时触发）；setup-repo（通用，`disable-model-invocation: true`——一次性仓库 setup，驱动 `setup-matt-pocock-skills` 再 `setup-coding-standards`，见 ADR-0005）；npm-release、my-pi-extension-maintenance、pi-session-search（pi 专属，带 `disable-model-invocation: true`，避免其他 harness 自动触发） |
 
 **发现深度约束**：`vercel-labs/skills` CLI 的发现规则只约束**技能目录**（含 `SKILL.md` 的目录）的深度——`skills/` 容器下最多三层（`skills/<cat>/<cat>/<name>/`）。本仓库技能目录最深为 `skills/mattpocock/<category>/<name>/`，在规则之内；技能目录内部的辅助文件（`agents/`、`references/`、`scripts/`）不受此限，可再往下嵌套。
 
@@ -24,7 +24,7 @@
 - `setup-matt-pocock-skills/issue-tracker-github.md`：`--add-assignee "@me"` 加引号 + Windows PowerShell splatting 警告
 - `kill-ai-slop/SKILL.md`：`disable-model-invocation: true`
 
-两个 pi 专属技能（`npm-release`、`my-pi-extension-maintenance`）从 Windows pi 配置迁移进 `skills/self/`，`~/.pi` 不再托管技能副本（迁移见 ticket #5）。
+pi 专属技能（`npm-release`、`my-pi-extension-maintenance`、`pi-session-search`）都在 `skills/self/`；`~/.pi` 不再托管技能副本（迁移见 ticket #5）。
 
 ## 安装 / 分发
 

@@ -2,13 +2,13 @@
 """Search pi session logs (JSONL, one event per line) UTF-8-safe.
 
 Usage:
-  session-search.py "pattern"                        file-level report (default)
-  session-search.py "pattern" --show N               ... with N snippet lines per hit
-  session-search.py --json "pattern"                 event-level structured report
-  session-search.py --json --role assistant "pat"    filter by message role
-  session-search.py --json --tool subagent "pat"     filter by tool-call name
-  session-search.py --json --tool subagent --field k=v "pat"   field filter (see below)
-  session-search.py --root DIR "pattern"             custom sessions root
+  pi-session-search.py "pattern"                        file-level report (default)
+  pi-session-search.py "pattern" --show N               ... with N snippet lines per hit
+  pi-session-search.py --json "pattern"                 event-level structured report
+  pi-session-search.py --json --role assistant "pat"    filter by message role
+  pi-session-search.py --json --tool subagent "pat"     filter by tool-call name
+  pi-session-search.py --json --tool subagent --field k=v "pat"   field filter (see below)
+  pi-session-search.py --root DIR "pattern"             custom sessions root
 
 Field filter semantics: with --tool, k=v is checked against that tool call's
 arguments (k must exist as a key, v a substring of the serialized value); without

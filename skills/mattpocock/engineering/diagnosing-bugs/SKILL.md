@@ -9,7 +9,7 @@ A discipline for hard bugs. Skip phases only when explicitly justified.
 
 When exploring the codebase, read `GLOSSARY.md` (if it exists) to get a clear mental model of the relevant modules, and check ADRs in the area you're touching.
 
-When the bug's trail runs through past pi sessions (it happened in an earlier run, or a behavior changed between runs), search them with the `session-search` skill instead of ad-hoc grep/python: it is UTF-8-safe, knows the JSONL structure, and caps output.
+When the bug's trail runs through past pi sessions (it happened in an earlier run, or a behavior changed between runs), search them with the `pi-session-search` skill instead of ad-hoc grep/python: it is UTF-8-safe, knows the JSONL structure, and caps output.
 
 ## Redact
 

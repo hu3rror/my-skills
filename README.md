@@ -17,7 +17,7 @@ the skill files, fork-style).
 | `skills/kill-ai-slop/<name>/` | [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop) | kill-ai-slop (upstream path is `skill/`; normalized to the source dir here) |
 | `skills/cloudflare/<name>/` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | security-audit (provenance traced; recorded in the local `~/.agents/.skill-lock.json`) |
 | `skills/awesome-copilot/<name>/` | [github/awesome-copilot](https://github.com/github/awesome-copilot) | create-readme (manual fork: remote README templates localized into `references/`; not in vendor-sync SOURCES, see `vendor/awesome-copilot.json`) |
-| `skills/self/<name>/` | self-authored | de-slop, web-debug, my-skills-maintenance (general-purpose; de-slop carries `disable-model-invocation: true`, explicit invocation only; my-skills-maintenance is model-invoked — one entry for the aggregation repo's maintenance flows, with a description scoped to repo-maintenance vocabulary and a read-only dry-run first step, so other harnesses never fire it spuriously); write-release-notes (general-purpose, model-invoked — description scoped to GitHub Release-notes requests, so other harnesses fire it only when release notes are being written); setup-repo (general-purpose, `disable-model-invocation: true` — one-run per-repo setup driving `setup-matt-pocock-skills` then `setup-coding-standards`, see ADR-0005); npm-release, my-pi-extension-maintenance (pi-specific, `disable-model-invocation: true`, so other harnesses never auto-trigger) |
+| `skills/self/<name>/` | self-authored | de-slop, web-debug, my-skills-maintenance (general-purpose; de-slop carries `disable-model-invocation: true`, explicit invocation only; my-skills-maintenance is model-invoked — one entry for the aggregation repo's maintenance flows, with a description scoped to repo-maintenance vocabulary and a read-only dry-run first step, so other harnesses never fire it spuriously); write-release-notes (general-purpose, model-invoked — description scoped to GitHub Release-notes requests, so other harnesses fire it only when release notes are being written); setup-repo (general-purpose, `disable-model-invocation: true` — one-run per-repo setup driving `setup-matt-pocock-skills` then `setup-coding-standards`, see ADR-0005); npm-release, my-pi-extension-maintenance, pi-session-search (pi-specific, `disable-model-invocation: true`, so other harnesses never auto-trigger) |
 
 **Discovery depth rule**: the `vercel-labs/skills` CLI discovery constrains only
 the depth of skill directories (dirs containing `SKILL.md`): at most three
@@ -47,9 +47,9 @@ baseline patches:
   quoting + Windows PowerShell splatting warning
 - `kill-ai-slop/SKILL.md`: `disable-model-invocation: true`
 
-The two pi-specific skills (`npm-release`, `my-pi-extension-maintenance`)
-were moved out of the Windows pi config into `skills/self/`; `~/.pi` no longer
-hosts skill copies (migration in ticket #5).
+The pi-specific skills (`npm-release`, `my-pi-extension-maintenance`,
+`pi-session-search`) live in `skills/self/`; `~/.pi` no longer hosts skill
+copies (migration in ticket #5).
 
 ## Install / distribute
 

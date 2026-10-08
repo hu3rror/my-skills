@@ -185,7 +185,7 @@ migration can split them into per-patch records unambiguously.
  
  When exploring the codebase, read `GLOSSARY.md` (if it exists) to get a clear mental model of the relevant modules, and check ADRs in the area you're touching.
  
-+When the bug's trail runs through past pi sessions (it happened in an earlier run, or a behavior changed between runs), search them with the `session-search` skill instead of ad-hoc grep/python: it is UTF-8-safe, knows the JSONL structure, and caps output.
++When the bug's trail runs through past pi sessions (it happened in an earlier run, or a behavior changed between runs), search them with the `pi-session-search` skill instead of ad-hoc grep/python: it is UTF-8-safe, knows the JSONL structure, and caps output.
 +
  ## Redact
  
@@ -200,7 +200,7 @@ migration can split them into per-patch records unambiguously.
  Build the right feedback loop, and the bug is 90% fixed.
 ```
 
-- **#27** claim (2 added lines): the blank line + the `session-search` pointer line after the
+- **#27** claim (2 added lines): the blank line + the `pi-session-search` pointer line after the
   "When exploring the codebase…" paragraph. **Holds.**
 - **#6** claim (added HITL-loop sentence): the step-10 line gains the Windows runtime note. **Holds.**
 
@@ -258,7 +258,7 @@ migration can split them into per-patch records unambiguously.
 +1. Load the `writing-for-agents` skill (read its SKILL.md) for the writing style guide.
  
 -2. Read the primary sources for the session the user specifies. This may mean searching through session logs on this machine. If the user doesn't specify a session, default to the current one.
-+2. Read the primary sources for the session the user specifies. This may mean searching through session logs on this machine — use the `session-search` skill (UTF-8-safe query over `~/.pi/agent/sessions` JSONL; supersedes ad-hoc grep/python one-liners). If the user doesn't specify a session, default to the current one.
++2. Read the primary sources for the session the user specifies. This may mean searching through session logs on this machine — use the `pi-session-search` skill (UTF-8-safe query over `~/.pi/agent/sessions` JSONL; supersedes ad-hoc grep/python one-liners). If the user doesn't specify a session, default to the current one.
  
  3. Look for candidates for improvement in these categories.
 ```

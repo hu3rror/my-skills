@@ -37,7 +37,7 @@ An external skill source vendored into the repo (mattpocock/skills, yetone/kill-
 _Avoid_: source (too generic)
 
 **pi-specific skill**:
-A skill owned by this user's pi workflows (`npm-release`, `my-pi-extension-maintenance`); lives under `skills/self/` and must keep `disable-model-invocation: true` so other harnesses sharing the canonical store never auto-trigger it. Self-authored skills not owned by pi workflows are general-purpose (`de-slop`, `web-debug`, `my-skills-maintenance`, `setup-repo`, `write-release-notes`); model-invocation is allowed when the description is scoped tightly enough that other harnesses never fire it spuriously.
+A skill owned by this user's pi workflows (`npm-release`, `my-pi-extension-maintenance`, `pi-session-search`); lives under `skills/self/` and must keep `disable-model-invocation: true` so other harnesses sharing the canonical store never auto-trigger it. Self-authored skills not owned by pi workflows are general-purpose (`de-slop`, `web-debug`, `my-skills-maintenance`, `setup-repo`, `write-release-notes`); model-invocation is allowed when the description is scoped tightly enough that other harnesses never fire it spuriously.
 _Avoid_: pi skill (drops the other-harness visibility consequence)
 
 ## Skill flows
