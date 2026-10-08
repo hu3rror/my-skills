@@ -34,7 +34,7 @@ Examples: `patches/mattpocock/engineering/research/step3-repo-internal.md` and
 | `file` | Repo-relative target file. Every `file:` across the tree is the sync script's skip set — never overwrite these. |
 | `upstream` | `source` (`owner/repo`) + `path` (upstream-repo-relative). Omitted for self-authored records. Pins are **not** inline — they resolve from `vendor/<source>.json` by matching `repo` (map #23; one pin source only). |
 | `verification` | `diff` (reconstructed against the pinned blob) or `behavioral` (self-authored, no upstream diff baseline). |
-| `after` | Another record `id` — only when this record's hunk context is that record's **output** (stacked patches on the same line; the DAG is small — 2 of the 27 migrated records). |
+| `after` | Another record `id` — only when this record's hunk context is that record's **output** (stacked patches on the same line; the DAG is small — 2 of the 27 records migrated at map #18, and later records stack too, so the `after:` fields across `patches/**/*.md` are the live set). |
 | `summary` | What changed and why, one paragraph. |
 | `origin` | Migration tracing only (`PATCHES.md A-class row #N`); new records omit it. |
 
