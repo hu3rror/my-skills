@@ -5,3 +5,6 @@ Thumbs.db
 
 # Logs and scratch output
 *.log
+
+# Node deps — the repo's scripts use Node built-ins only; guard a stray install
+node_modules/
