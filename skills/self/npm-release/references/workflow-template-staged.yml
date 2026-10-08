@@ -1,0 +1,55 @@
+# npm 发布工作流模板——暂存流(Trusted Publisher / OIDC,零 token)
+# 用法:复制到 .github/workflows/publish.yml,按 SKILL.md 的"定制点"逐项调整。
+# 前置:npmjs.com 已为包配置 Trusted Publisher,绑定本仓库 + 本 workflow 文件名
+# (Allowed actions 无需额外配置——npm stage publish 恒允许)。
+# 暂存流:CI 只 `npm stage publish` 暂存包,真正发布由维护者本地
+# `npm stage approve <stage-id>`(2FA)执行;错误暂存 `npm stage reject`。
+name: publish
+
+on:
+  push:
+    tags:
+      - "v*" # 定制点:仓库 tag 约定(如 "v*" / "release-*")
+
+permissions:
+  contents: read # 暂存流不建 Release(版本尚未真正发布),无需 contents: write
+  id-token: write # Trusted Publishing(OIDC)必需;同时自动生成 provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest # 定制点:测试依赖 Windows 特性时改 windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24 # 定制点:npm stage 需 npm 11.15.0+/Node 22.14.0+(官方要求);
+                            # Node 24.19+ 自带 npm ≥ 11.17 满足;Node 22 系只带 npm 10,不满足
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci # 定制点:无 package-lock.json 时用 npm install
+
+      - name: Run tests
+        # 定制点:无测试可删本步骤;构建脚本需工具路径时在此 step 加 env(如 PI_ESBUILD_DIR)
+        run: npm test
+
+      - name: Verify tag matches package.json version
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$version" ]; then
+            echo "::error::tag v${tag} does not match package.json version ${version}"
+            exit 1
+          fi
+
+      # 暂存:不直接发布;stage-id 在日志中(行格式
+      # `+ <name>@<version> (staged with id <uuid>)`),交付维护者本地 approve。
+      # OIDC token 只够 stage publish;approve/reject 需本地登录 + 2FA。
+      - name: Stage package on npm registry
+        run: npm stage publish --provenance
+
+      # 暂存流不建 GitHub Release:此版本尚未真正发布,等维护者 approve 后由
+      # agent 按 SKILL.md 步骤 7 手动 `gh release create`(分类说明见
+      # ../write-release-notes/references/release-notes-guide.md)。
