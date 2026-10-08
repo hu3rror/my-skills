@@ -7,10 +7,11 @@ upstream:
 verification: diff
 summary: >-
   "Closing tickets" section added to the generated tracker doc: git status
-  must be clean before closing, probes run under the literal `$TEMP` path
-  (never the repo root), and the Windows scratch-path trap is spelled out —
-  Git Bash `/tmp` is `%TEMP%`, but Windows-native tools (node / python / the
-  `write` tool) resolve `/tmp/...` to `C:\tmp\...`, one string two roots.
+  must be clean before closing, probes run under the OS temp directory, resolved
+  explicitly (`$env:TEMP` on Windows; `$TMPDIR`, else `/tmp`, on Linux / WSL /
+  macOS) and never the repo root, and the Windows scratch-path trap is spelled
+  out — Git Bash `/tmp` is `%TEMP%`, but Windows-native tools (node / python /
+  the `write` tool) resolve `/tmp/...` to `C:\tmp\...`, one string two roots.
 ---
 
 ## Why
@@ -31,7 +32,7 @@ the template makes every generated tracker carry the pointer.
  
 +## Closing tickets
 +
-+Before closing, `git status --porcelain` must be empty and **untracked files (`??`) count as dirty** — run probes/experiments under the literal `$TEMP` path, never the repo root. **On Windows with Git Bash, `/tmp` is `%TEMP%`, but Windows-native tools (node / python / the `write` tool) resolve `/tmp/...` to `C:\tmp\...` — one string, two roots.** Write the full `$TEMP` path explicitly in every scratch command and path argument.
++Before closing, `git status --porcelain` must be empty and **untracked files (`??`) count as dirty** — run probes/experiments under the OS temp directory (resolved explicitly: `$env:TEMP` on Windows; `$TMPDIR`, else `/tmp`, on Linux / WSL / macOS), never the repo root. **On Windows with Git Bash, `/tmp` is `%TEMP%`, but Windows-native tools (node / python / the `write` tool) resolve `/tmp/...` to `C:\tmp\...` — one string, two roots.** Write the resolved temp path explicitly in every scratch command and path argument.
 +
  ## When a skill says "publish to the issue tracker"
  

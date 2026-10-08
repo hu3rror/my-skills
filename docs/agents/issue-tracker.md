@@ -17,7 +17,7 @@ Infer the repo from `git remote -v`; `gh` does this automatically when run insid
 
 Attach the verification report in a **single write** — `gh issue close <number> --comment "<AC-by-AC report>"` — instead of `comment` then `close`. One write halves the exposure window when the network is flaky (next section) and never leaves an orphaned report comment behind.
 
-Before closing, `git status --porcelain` must be empty and **untracked files (`??`) count as dirty** — run probes/experiments under the literal `$TEMP` path (`C:/Users/Hue/AppData/Local/Temp`), never the repo root. **On this machine Git Bash's `/tmp` is `%TEMP%`, but Windows-native tools (node / python / pi's `write` tool) resolve `/tmp/...` to `C:\tmp\...` — one string, two roots.** Write the full `$TEMP` path explicitly in every scratch command and path argument.
+Before closing, `git status --porcelain` must be empty and **untracked files (`??`) count as dirty** — run probes/experiments under the OS temp directory (resolved explicitly: `$env:TEMP` on Windows; `$TMPDIR`, else `/tmp`, on Linux / WSL / macOS; on this machine `C:/Users/Hue/AppData/Local/Temp`), never the repo root. **On this machine Git Bash's `/tmp` is `%TEMP%`, but Windows-native tools (node / python / pi's `write` tool) resolve `/tmp/...` to `C:\tmp\...` — one string, two roots.** Write the resolved temp path explicitly in every scratch command and path argument.
 
 ## GitHub write hiccups
 

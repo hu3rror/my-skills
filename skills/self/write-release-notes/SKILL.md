@@ -27,7 +27,7 @@ description: "Write GitHub Release notes for a just-tagged version and fill them
 - 修 bug 条目写清之前症状,让读者能判断是不是自己遇到的那个。
 
 ### 3. 落盘
-**完成判据**:整理版说明写成本地文件(如 `$env:TEMP\release-notes-<tag>.md`)。
+**完成判据**:整理版说明写成本地文件,放在 OS 临时目录(Windows `$env:TEMP\release-notes-<tag>.md`;Linux/WSL/macOS `${TMPDIR:-/tmp}/release-notes-<tag>.md`)。
 不要写进仓库目录——发布说明不是仓库内容,临时文件路径即可。
 
 ### 4. 写入 Release

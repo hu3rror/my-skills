@@ -5,7 +5,7 @@ argument-hint: "What will the next session be used for?"
 disable-model-invocation: true
 ---
 
-Write a handoff document summarising the current conversation so a fresh agent can continue the work. Save to the temporary directory of the user's OS (`$TMPDIR`, else `/tmp`; `%TEMP%` on Windows) - not the current workspace.
+Write a handoff document summarising the current conversation so a fresh agent can continue the work. Save to the OS temp directory, resolved explicitly (`$env:TEMP` on Windows; `$TMPDIR`, else `/tmp`, on Linux / WSL / macOS) - not the current workspace. A bare `/tmp/...` path reaching a Windows-native tool (node, python, pi's `write`) resolves to `C:\tmp\...` instead, so pass the resolved absolute path on Windows.
 
 Open the document with a handover preamble addressed to the next agent, worded to force an alignment stop before any work:
 
