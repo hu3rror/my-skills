@@ -10,8 +10,8 @@ summary: >-
   written in English, and when the target repo is a personal repository (remote
   owner matches `gh api user --jq .login`; treated as external when unconfirmed)
   a separate comment with `## Chinese Summary (non-authoritative)` is posted on
-  the PR summarizing the key points. The rules ship with the skill so the
-  PR-writing task carries them wherever it runs.
+  the PR — the primary content — summarizing the key points. The rules ship
+  with the skill so the PR-writing task carries them wherever it runs.
 ---
 
 ## Why
@@ -28,7 +28,7 @@ The PR template only shapes the body; it says nothing about language or about po
  
 +## Language
 +
-+Write the PR body in English. If the target repo's remote owner matches the current GitHub user (`gh api user --jq .login`; treat it as external when it can't be confirmed), also post a separate comment on the PR with a `## Chinese Summary (non-authoritative)` section summarizing the key points.
++Write the PR body in English. If the target repo's remote owner matches the current GitHub user (`gh api user --jq .login`; treat it as external when it can't be confirmed), also post a separate comment on the PR — the primary content — with a `## Chinese Summary (non-authoritative)` section summarizing the key points.
 +
  ## Sections
  

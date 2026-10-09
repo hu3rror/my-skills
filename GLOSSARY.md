@@ -46,6 +46,12 @@ _Avoid_: pi skill (drops the other-harness visibility consequence)
 The single-run entry that makes a repo usable by the engineering skills, composed as one thin orchestrator (`skills/self/setup-repo`, `disable-model-invocation: true`) driving two setup primitives back-to-back: `setup-matt-pocock-skills` (issue tracker, triage labels, domain docs — with the maintainer's standard answers pre-filled: GitHub, default triage labels, the existing AGENTS/CLAUDE file) and then `setup-coding-standards` (`CODING_STANDARDS.md`). The composite delegates, never copies content — each primitive keeps its own single home, so upstream drift in a vendored primitive flows through automatically.
 _Avoid_: setup flow (generic), repo configuration (ambiguous with config files)
 
+## Output language
+
+**Primary content** (主内容):
+The single human-facing deliverable of a publishing skill that carries the Chinese summary on personal repos — the PR body (`pr`) or the spec issue (`to-spec`). Derived work items (tickets, sub-issues, follow-ups) are not primary content and get no summary.
+_Avoid_: main content (vague), spec issue (names one deliverable, not the concept), parent issue (parentage is not the discriminator — a parent issue gets no summary)
+
 ## Update detection
 
 **Vendor freshness check**:

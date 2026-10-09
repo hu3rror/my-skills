@@ -34,7 +34,7 @@ Use this template for writing the PR body:
 
 ## Language
 
-Write the PR body in English. If the target repo's remote owner matches the current GitHub user (`gh api user --jq .login`; treat it as external when it can't be confirmed), also post a separate comment on the PR with a `## Chinese Summary (non-authoritative)` section summarizing the key points.
+Write the PR body in English. If the target repo's remote owner matches the current GitHub user (`gh api user --jq .login`; treat it as external when it can't be confirmed), also post a separate comment on the PR — the primary content — with a `## Chinese Summary (non-authoritative)` section summarizing the key points.
 
 ## Sections
 
