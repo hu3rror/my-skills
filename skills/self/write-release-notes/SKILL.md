@@ -11,6 +11,8 @@ description: "Write GitHub Release notes for a just-tagged version and fill them
 
 发布说明直接公开发布,读者是最终用户(npm 场景是调用方开发者)。质量红线:每条都写"对读者来说变了什么",不堆 commit 标题;没有的分类整节删掉,不空占位。`gh release create`/`edit` 前先 `--help` 核实旗标,不凭记忆拼。
 
+发布说明正文一律用英文——参考的模板骨架已是英文,正文(亮点段、bug 条目、Breaking Changes 迁移说明)同样不写成中文。
+
 ## 步骤
 
 ### 1. 摸底与素材
@@ -30,12 +32,17 @@ description: "Write GitHub Release notes for a just-tagged version and fill them
 **完成判据**:整理版说明写成本地文件,放在 OS 临时目录(Windows `$env:TEMP\release-notes-<tag>.md`;Linux/WSL/macOS `${TMPDIR:-/tmp}/release-notes-<tag>.md`)。
 不要写进仓库目录——发布说明不是仓库内容,临时文件路径即可。
 
-### 4. 写入 Release
+### 4. 展示并确认
+**完成判据**:用户已看过整理版全文并明确同意写入。
+- 展示整理版全文,并点明下一步是对 Release 的写操作(`gh release create`/`edit`)。
+- 写操作(发布到外部)前必须等用户明确同意;只想要草稿时在展示后停下。
+
+### 5. 写入 Release
 **完成判据**:`gh release view <tag>` 确认 Release 里的说明已是整理版,不是一行 compare 链接。
 - 先查 `gh release view <tag>` 是否存在:不存在 → `gh release create <tag> --title <tag> --notes-file <文件>`;已存在 → `gh release edit <tag> --notes-file <文件>`。
 - 桌面 workflow 几乎总会先建好带产物的 Release,只能 edit;对已存在的 Release 用 create 会报错或建出无产物的空 Release。
 
-### 5. 验证与收尾
+### 6. 验证与收尾
 **完成判据**:`gh release view <tag>` 输出确认;交付说明注明版本号、验证方式与跳过项。
 
 ## 上下文差异

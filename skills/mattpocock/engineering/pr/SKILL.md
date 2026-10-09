@@ -32,6 +32,10 @@ Use this template for writing the PR body:
 <optional: potential ramifications of merge>
 ```
 
+## Language
+
+Write the PR body in English. If the target repo's remote owner matches the current GitHub user (`gh api user --jq .login`; treat it as external when it can't be confirmed), also post a separate comment on the PR with a `## Chinese Summary (non-authoritative)` section summarizing the key points.
+
 ## Sections
 
 Skip all preambles and keep prose brief. Use the user's domain language from `GLOSSARY.md`.

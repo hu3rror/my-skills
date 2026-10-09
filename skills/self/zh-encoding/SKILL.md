@@ -37,6 +37,11 @@ EOF
 python -c "import sys; print(sys.stdout.encoding)"   # 期望 utf-8
 ```
 
+持久化修改（`setx` 写注册表、`config.toml` 写配置）是写盘操作，动手前：
+- 先读 `~/.config/mise/config.toml`，确认里面没有密钥/Token 等敏感内容再做修改；
+- 优先会话内临时生效——只在当前命令前加 `PYTHONUTF8=1`，或本次会话 `export PYTHONUTF8=1`，不写盘；
+- 确需持久化时，先向用户展示将追加的 `[env]` 段与 `setx` 命令，取得明确同意后再写；撤销方法见本节末尾。
+
 若不是 utf-8（locale 回退 GBK/cp936 的典型症状）：
 
 ```powershell
