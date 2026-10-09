@@ -73,3 +73,7 @@ A description of the things that are out of scope for this spec.
 Any further notes about the feature.
 
 </spec-template>
+
+### 4. Publish language
+
+Write the spec body in English. For a personal repo (remote owner matches `gh api user --jq .login`; treat as external when it can't be confirmed), post one separate comment on the spec issue — the primary content — with a `## Chinese Summary (non-authoritative)` section summarizing the key points. A summary belongs to the spec issue alone; never add it to sub-issues or follow-ups.

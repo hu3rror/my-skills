@@ -103,3 +103,7 @@ The end-to-end behaviour this ticket makes work, from the user's perspective, no
 </issue-template>
 
 In either form, avoid specific file paths or code snippets: they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it and note briefly that it came from a prototype. Trim to the decision-rich parts, not a working demo, just the important bits.
+
+### 6. Language
+
+Write ticket bodies in English. Tickets are work items for agents, not primary content — never attach `## Chinese Summary (non-authoritative)` comments to tickets, sub-issues, or follow-ups. A Chinese summary applies only to primary content (the spec issue a `to-spec` run published, for a personal repo), never per ticket or per run.
