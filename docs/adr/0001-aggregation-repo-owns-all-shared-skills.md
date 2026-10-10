@@ -1,7 +1,5 @@
 # The aggregation repo owns all shared skills
 
-> [ZH] 决策：全部共享技能收进聚合仓库作为唯一内容源；canonical skills store 是派生产物、从不直接编辑；分发链的源固定指向聚合仓库。
-
 Status: accepted
 
 Skills used to be installed from upstream sources directly into the canonical

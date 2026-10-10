@@ -1,7 +1,5 @@
 # One unified maintenance skill that references, not absorbs, its sources
 
-> [ZH] 决策：本聚合仓库的维护入口收敛为单一技能 `skills/self/my-skills-maintenance`——router + 五条已披露分支（vendor-sync / stray-recovery / patch-record / freshness / distribute），不是 router+子技能；退役 `consolidate-strays` 与 `my-skills-vendor-sync`。#18 out-of-scope：`writing-for-agents` 仍是独立的上游参考技能，my-skills-maintenance **只加载它、不并入它**（避免复制导致双份、并保住 retro/ask-matt 指向它的补丁引用）。
-
 Status: accepted
 
 Map #18 succeeded the two explicit-invocation maintenance skills

@@ -1,7 +1,5 @@
 # Patch strategy: fork semantics with per-patch records
 
-> [ZH] 决策：补丁直接落在仓库技能文件里（fork 语义），偏差以 `patches/<source>/` 下的逐补丁记录（patch record）为准（`patches/**/*.md` 即清单），同步脚本跳过记录所列文件并标记手动合并；否决 .patch 文件方案。原 PATCHES.md 在 map #18 迁移时删除。
-
 Status: accepted
 
 vercel-labs/skills has no overlay or patch mechanism, so adapting upstream

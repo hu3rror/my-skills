@@ -1,7 +1,5 @@
 # Recover store strays by consolidation, not by redirecting pi's runtime
 
-> [ZH] 决策：pi 运行时继续读 canonical skills store；store 里的游离技能（新建或魔改）在下次分发前由手动触发的 consolidation 机制复制进聚合仓库，魔改的 vendored 技能按 ADR-0002 记入 `patches/<source>/` 的逐补丁记录（record-first）。否决了把 pi 运行时重定向到聚合仓库等替代方案。
-
 Status: accepted
 
 ## Context

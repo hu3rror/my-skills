@@ -1,7 +1,5 @@
 # Excluded skills: manifest-declared curation, not code
 
-> [ZH] 决策：从 vendor sync 排除的技能以数据形式记录在 vendor/<source>.json（exclusions 数组），同步脚本解析并静默跳过；技能名不硬编码进脚本。否决硬编码谓词、include-list、藏深度三个方案。
-
 Status: accepted
 
 The aggregation repo curates what the distribution chain ships: 14 mattpocock

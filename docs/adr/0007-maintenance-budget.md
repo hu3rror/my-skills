@@ -1,7 +1,5 @@
 # Maintenance budget: a measurable upper bound on the redesign
 
-> [ZH] 决策：新机制的维护成本以可测量上限约束——scripts 代码+测试 ≤ 3059 行（提交 7c0c3a4 实测；#27 引用的 2350 为 charting 日口径，+709 全部来自已落地的 #23/#24 预备工作）、CI 任务数 ≤ 3（迁移后 #25 删除 vendor-sync.yml → 2）、常见操作（vendor sync 与本地编辑）各为 1 命令 + 1 检查且步骤数只减不增。预算由既有 script-tests 任务里的守卫测试机器执行，不新增 CI 任务；提升预算必须在 docs/maintenance-budget.md 记录日期与理由。否决无预算、仅文档预算、新增 CI 任务的预算检查三个方案。
-
 Status: accepted
 
 ## Context

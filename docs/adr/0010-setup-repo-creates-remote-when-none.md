@@ -1,7 +1,5 @@
 # setup-repo creates a GitHub remote when the repo has none
 
-> [ZH] 决策：`setup-repo` 在探索发现完全无远程仓库时，先自动创建 GitHub 私有仓库（`gh repo create <目录名> --private --source=. --push`；目录无提交时先建最小初始提交），再照常委托 setup 原语；创建失败（gh 未认证 / 网络 / 重名）时降级回询问式。远程创建发生在委托 `setup-matt-pocock-skills` 之前，其 Section A 的"无 remote → local markdown"兜底永不触发；执行时仍按会话向用户确认。
-
 Status: accepted
 
 The maintainer's standard answer is GitHub for every repo (ADR-0005), but a

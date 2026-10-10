@@ -1,7 +1,5 @@
 # The maintenance flow locates the aggregation repo through a machine-local pointer, never an assumption
 
-> [ZH] 决策：维护流程**不再假设工作目录就是聚合仓库**。仓库位置记在 store 旁的机器本地仓库锚点 `~/.agents/.my-skills-repo`（一行绝对路径）；技能每次开跑先读它→验证（目录存在、`git remote get-url origin` 以 `my-skills` 结尾、拥有 `scripts/vendor-sync.mjs`）→找到就基于它执行全部命令；缺失或失效→问用户（新位置或重新 clone）并把答案写回锚点文件。三个自定位脚本（`consolidate-strays`/`vendor-sync`/`verify-patch-records`）启动时用同一身份校验兜底，仓库外运行即大声拒绝，绝不静默基于错误根目录出结论。
-
 Status: accepted
 
 The maintenance chain derives its repo root from the working directory and

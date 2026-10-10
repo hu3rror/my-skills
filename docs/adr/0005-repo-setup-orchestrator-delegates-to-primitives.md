@@ -1,7 +1,5 @@
 # Repo setup is a thin self-authored orchestrator that delegates to the setup primitives
 
-> [ZH] 决策：仓库级 setup 由自创薄编排器 `skills/self/setup-repo` 承担——它按序委托 `setup-matt-pocock-skills`（预填标准答案：GitHub + 默认 triage labels + 现存 agent 文件）和 `setup-coding-standards`（`CODING_STANDARDS.md`），只含顺序/路由事实、绝不复制内容；`ask-matt` 的 Precondition 以 A-class patch 指向它；否决把自创内容折进 vendored skill。
-
 Status: accepted
 
 The user runs per-repo setup with the same three answers every time (GitHub

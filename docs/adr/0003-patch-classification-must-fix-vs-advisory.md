@@ -1,7 +1,5 @@
 # Patch classification: must-fix vs advisory
 
-> [ZH] 决策：平台冲突分两级——A-class（技能在 Windows 上无条件不可用）落补丁到 consolidated copy；B-class（条件性/非致命环境问题）只在 docs/advisory-notes.md 记 advisory note、不改技能正文。理由是保持 upstream diff 最小，让 vendor sync 便宜。
-
 Status: accepted
 
 Some upstream skills assume a bash environment and break on Windows PowerShell.
