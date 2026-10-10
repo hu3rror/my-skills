@@ -2,15 +2,9 @@
 name: my-skills-maintenance
 description: >-
   Maintain the my-skills aggregation repo — vendor sync, stray recovery, patch
-  records, freshness, and distribution to the canonical skills store. One entry;
-  the branch is picked from the request. Use when the user asks to sync or update
-  vendored skills, recover or consolidate stray skills, resolve a pending-update
-  issue, record a patch deviation, check vendor freshness, distribute skills to
-  the store, retire a skill from it, or roll a CODING_STANDARDS baseline
-  upgrade into consumer repos. Every run starts with the read-only
-  stray dry-run; all remote or destructive writes (git push, gh issue ops, store
-  changes) wait on the user's go-ahead. Replaces consolidate-strays and
-  my-skills-vendor-sync.
+  records, freshness, distribution, and CODING_STANDARDS baseline roll-outs.
+  The branch is picked from the request.
+disable-model-invocation: true
 ---
 
 # my-skills maintenance — one entry for the aggregation repo

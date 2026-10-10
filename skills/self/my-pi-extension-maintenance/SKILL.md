@@ -1,6 +1,6 @@
 ---
 name: my-pi-extension-maintenance
-description: "Maintain a pi extension against its pi dependencies: sync to the latest (or pinned) target versions, verify the actual import surface against the target's types, exports, changelog and official docs, fix breaking changes with zero behavior change (user sign-off only when a behavior change is unavoidable), survey new APIs for optional adoption."
+description: "Sync a pi extension to its pi dependencies: upgrade to the latest (or pinned) version, verify the real import surface against the target's types, exports, changelog, and docs, fix breaking changes with zero behavior change (sign-off only when unavoidable)."
 disable-model-invocation: true
 ---
 

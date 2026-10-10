@@ -1,14 +1,11 @@
 ---
 name: pi-session-search
 description: >-
-  Search pi session logs — pi-only, ~/.pi/agent/sessions JSONL, one JSON event
-  per line — for past-run content: a phrase, a tool call, a thinking passage,
-  a structured field (role / tool / args); or to read the log format itself —
-  what an event is, where tool calls and results land, no reverse-engineering.
-  UTF-8-safe, output-capped. Use when the agent must dig through past sessions
-  — retro archaeology, debugging "it happened in an earlier run", or tracing a
-  behavior change across sessions.
-disable-model-invocation: true
+  Search pi session logs (~/.pi/agent/sessions JSONL) for past-run content —
+  phrases, tool calls, thinking passages, fields — or read the log format
+  itself. Use when the agent must dig through past sessions: retro
+  archaeology, debugging "it happened in an earlier run", tracing a behavior
+  change across sessions.
 ---
 
 # Pi session search

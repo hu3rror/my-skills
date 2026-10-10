@@ -1,6 +1,6 @@
 ---
 name: setup-repo
-description: "Run the one-shot per-repo setup: drive setup-matt-pocock-skills (issue tracker, triage labels, domain docs) then setup-coding-standards (CODING_STANDARDS.md) in a single run, with the maintainer's standard answers pre-filled and no re-asking on the default path."
+description: "Run the one-shot per-repo setup: drive setup-matt-pocock-skills (issue tracker, triage labels, domain docs) then setup-coding-standards, standard answers pre-filled, no re-asking."
 disable-model-invocation: true
 ---
 

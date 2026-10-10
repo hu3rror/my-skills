@@ -1,6 +1,6 @@
 ---
 name: write-release-notes
-description: "Write GitHub Release notes for a just-tagged version and fill them in via gh (create or edit): gather material from git log + merged PRs, categorize per the template (Features / Fixes / Docs & Chore / Breaking Changes), then verify. Use when the user asks to write or publish release notes, or fill in a GitHub Release description, for an npm package or a non-npm project (desktop software)."
+description: "Write GitHub Release notes for a just-tagged version and fill them in via gh, from git log + merged PRs. Use when the user asks to write or publish release notes, or fill in a GitHub Release description — npm package or desktop project."
 ---
 
 # GitHub Release 发布说明

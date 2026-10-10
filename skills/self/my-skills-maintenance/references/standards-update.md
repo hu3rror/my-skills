@@ -13,8 +13,8 @@ pre-check does not apply to it.
 ## 1. Collect target repos
 
 Take the repo list from the user, or scan a directory they name (one level
-deep, looking for `CODING_STANDARDS.md`, e.g. under `C:\Users\Hue\Repos`).
-Repos without that file are skipped — creating one is `setup-coding-standards`' job.
+deep, looking for `CODING_STANDARDS.md`). Repos without that file are
+skipped — creating one is `setup-coding-standards`' job.
 
 Done when the target list is fixed and shown to the user.
 

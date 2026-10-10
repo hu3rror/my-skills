@@ -1,7 +1,7 @@
 ---
 disable-model-invocation: true
 name: npm-release
-description: Sets up npm package release automation — a GitHub Actions publish workflow that publishes to npmjs on tag push, authenticated via npmjs Trusted Publisher (OIDC, zero tokens, provenance auto-generated). Supports two flows, direct by default — direct publish (tag push releases immediately) or staged publish (CI stages, maintainer approves with 2FA). Use when the user asks to automate npm publishing, add a release/publish workflow (publish.yml), configure trusted publishing / npm stage / OIDC publish, or set up tag-push CI publishing for an npm package.
+description: "Set up npm release automation: a GitHub Actions publish workflow that publishes to npmjs on tag push via Trusted Publisher (OIDC, zero tokens) — direct or staged."
 ---
 
 # npm 包自动发布(Trusted Publisher + GitHub Actions)

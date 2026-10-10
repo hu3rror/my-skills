@@ -1,9 +1,6 @@
 ---
 name: de-slop
-description: |
-  Detect and eliminate AI slop / formulaic template writing from Chinese or English text.
-  检测并消除中文或英文文本中的 AI 味与模板腔。
-  Explicit invocation only — call by name (e.g. /de-slop). Auto-detects text language and loads the matching pattern library. 支持三种模式：快速改写（默认）、纯检测、深度诊断。
+description: "检测并消除中文或英文文本中的 AI 味与模板腔（AI slop / formulaic template writing）。"
 disable-model-invocation: true
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: web-debug
-description: "Debug or verify frontend behavior by driving a live page (DOM, storage, network, console) with the browser_* tools instead of reading source or asking the user to paste from devtools. Use when the user reports: broken login or auth flow, failed/401/403/CORS requests, JWT or session weirdness, form not submitting, button does nothing, blank screen, hydration mismatch, stale data, 'works locally / fails in prod', or asks you to verify a frontend change end-to-end."
+description: "Debug or verify frontend behavior by driving the live page with browser_* tools. Use when the user reports: broken login or auth, JWT/session issues, failed/401/403/CORS requests, form or button not working, blank screen, hydration mismatch, stale data, 'works locally / fails in prod', or asks to verify a frontend change end-to-end."
 ---
 
 # Web debugging via the live page
