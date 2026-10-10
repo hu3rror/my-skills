@@ -6,6 +6,7 @@ description: >-
   itself. Use when the agent must dig through past sessions: retro
   archaeology, debugging "it happened in an earlier run", tracing a behavior
   change across sessions.
+disable-model-invocation: true
 ---
 
 # Pi session search
