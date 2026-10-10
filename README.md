@@ -13,7 +13,7 @@ the skill files, fork-style).
 
 | Directory | Source | Notes |
 |---|---|---|
-| `skills/mattpocock/{engineering,productivity}/<name>/` | [mattpocock/skills](https://github.com/mattpocock/skills) | 24 skills (engineering 18 + productivity 6); the upstream `in-progress` / `misc` categories and three unused skills are excluded from vendor sync (exclusions in `vendor/mattpocock.json`) |
+| `skills/mattpocock/{engineering,productivity}/<name>/` | [mattpocock/skills](https://github.com/mattpocock/skills) | 25 skills (engineering 19 + productivity 6); the upstream `in-progress` / `misc` categories and two unused skills are excluded from vendor sync (exclusions in `vendor/mattpocock.json`) |
 | `skills/kill-ai-slop/<name>/` | [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop) | kill-ai-slop (upstream path is `skill/`; normalized to the source dir here) |
 | `skills/cloudflare/<name>/` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | security-audit (provenance traced; recorded in the local `~/.agents/.skill-lock.json`) |
 | `skills/awesome-copilot/<name>/` | [github/awesome-copilot](https://github.com/github/awesome-copilot) | create-readme (manual fork: remote README templates localized into `references/`; not in vendor-sync SOURCES, see `vendor/awesome-copilot.json`) |

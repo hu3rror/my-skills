@@ -32,7 +32,6 @@ const MATTPOCOCK_META = {
     { path: "skills/in-progress", reason: "beta category, not needed" },
     { path: "skills/misc", reason: "uncurated one-offs, not needed" },
     { path: "skills/engineering/wizard", reason: "not used by this maintainer" },
-    { path: "skills/engineering/triage", reason: "solo dev, no inbound issues to triage" },
     { path: "skills/productivity/to-questionnaire", reason: "not used by this maintainer" },
   ],
 };
@@ -58,7 +57,6 @@ test("parseSourceMeta parses a vendored source's meta", () => {
     "skills/in-progress",
     "skills/misc",
     "skills/engineering/wizard",
-    "skills/engineering/triage",
     "skills/productivity/to-questionnaire",
   ]);
 });

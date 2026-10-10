@@ -27,7 +27,7 @@ invalid (a silently dropped pin or exclusion would unprotect a patch).
 
 | File | Source | Status |
 |---|---|---|
-| `mattpocock.json` | [mattpocock/skills](https://github.com/mattpocock/skills) | vendored; 5 excluded paths; release-tracked |
+| `mattpocock.json` | [mattpocock/skills](https://github.com/mattpocock/skills) | vendored; 4 excluded paths; release-tracked |
 | `kill-ai-slop.json` | [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop) | vendored |
 | `cloudflare.json` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | vendored; ships unpatched (pin = provenance trace) |
 | `awesome-copilot.json` | [github/awesome-copilot](https://github.com/github/awesome-copilot) | manual fork, **not** in `vendor-sync.mjs` `SOURCES`; pin kept for provenance and the #10 diff baseline |
