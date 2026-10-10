@@ -19,8 +19,8 @@
 // skills/other/<name> by default (provenance unknown), skills/self/<name> with
 // --to self. The store copy stays in place; running apply again is a no-op.
 // Modified strays are report-only: apply never copies one — the dry-run
-// report prints a line-level diff summary of store content versus the
-// consolidated copy, so the deviation can be recorded as a per-patch record
+// report prints a line-level diff summary of the consolidated copy ("-") versus
+// the store ("+"), so the deviation can be recorded as a per-patch record
 // at `patches/<source>/` before the consolidated copy ever changes (ADR-0002;
 // the record-first order supersedes the retired PATCHES.md row template). All roots are parameterized with home-derived
 // defaults so fixtures drive
@@ -383,7 +383,7 @@ export function applyStray({ store, lock, repo, name, home = "other" }) {
 function modifiedStrayDetail(c, repo) {
   const copyDir = join(repo, c.destination);
   const diffs = diffDirectories(c.dir, copyDir);
-  const lines = ["    Diff summary (store vs consolidated copy):"];
+  const lines = ["    Diff summary (\"-\" = repo copy, \"+\" = store):"];
   const count = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
   for (const e of diffs) {
     if (e.binary) lines.push(`      ${e.rel}: binary - differs (byte compare)`);

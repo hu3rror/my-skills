@@ -613,7 +613,7 @@ test("a modified stray prints a diff summary of the store content versus the con
       lock: d.lock,
       repo: d.repo,
     });
-    assert.match(report, /Diff summary \(store vs consolidated copy\):/);
+    assert.match(report, /Diff summary \("-" = repo copy, "\+" = store\):/);
     assert.match(report, /SKILL\.md: 2 lines added, 1 line removed/);
     assert.match(report, /- beta/);
     assert.match(report, /\+ BETA-edited/);
@@ -832,7 +832,7 @@ test("CLI dry-run reports a modified stray with a diff and a record pointer, tou
     );
     assert.equal(res.status, 2);
     assert.match(res.stdout, /modified-stray \(1\)/);
-    assert.match(res.stdout, /Diff summary \(store vs consolidated copy\):/);
+    assert.match(res.stdout, /Diff summary \("-" = repo copy, "\+" = store\):/);
     assert.match(res.stdout, /- original/);
     assert.match(res.stdout, /\+ locally edited/);
     assert.match(res.stdout, /Record this deviation as a per-patch record/);
