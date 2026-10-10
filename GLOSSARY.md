@@ -47,7 +47,7 @@ _Avoid_: retired skill (hard deletion, no working-tree copy)
 ## Skill flows
 
 **Repo setup** (仓库级 setup):
-The single-run entry that makes a repo usable by the engineering skills, composed as one thin orchestrator (`skills/self/setup-repo`, `disable-model-invocation: true`) driving two setup primitives back-to-back: `setup-matt-pocock-skills` (issue tracker, triage labels, domain docs — with the maintainer's standard answers pre-filled: GitHub, default triage labels, the existing AGENTS/CLAUDE file) and then `setup-coding-standards` (`CODING_STANDARDS.md`). The composite delegates, never copies content — each primitive keeps its own single home, so upstream drift in a vendored primitive flows through automatically.
+The single-run entry that makes a repo usable by the engineering skills, composed as one thin orchestrator (`skills/self/setup-repo`, `disable-model-invocation: true`) driving two setup primitives back-to-back: `setup-matt-pocock-skills` (issue tracker, triage labels, domain docs — with the maintainer's standard answers pre-filled: GitHub, default triage labels, the existing AGENTS/CLAUDE file) and then `setup-coding-standards` (`CODING_STANDARDS.md`). A repo with no remote gets a GitHub **private** repo created first (step 2, ADR-0010) — creation fails fall back to asking. The composite delegates, never copies content — each primitive keeps its own single home, so upstream drift in a vendored primitive flows through automatically.
 _Avoid_: setup flow (generic), repo configuration (ambiguous with config files)
 
 ## Output language
