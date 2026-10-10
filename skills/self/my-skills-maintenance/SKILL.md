@@ -6,7 +6,8 @@ description: >-
   the branch is picked from the request. Use when the user asks to sync or update
   vendored skills, recover or consolidate stray skills, resolve a pending-update
   issue, record a patch deviation, check vendor freshness, distribute skills to
-  the store, or retire a skill from it. Every run starts with the read-only
+  the store, retire a skill from it, or roll a CODING_STANDARDS baseline
+  upgrade into consumer repos. Every run starts with the read-only
   stray dry-run; all remote or destructive writes (git push, gh issue ops, store
   changes) wait on the user's go-ahead. Replaces consolidate-strays and
   my-skills-vendor-sync.
@@ -16,7 +17,7 @@ description: >-
 
 The single entry for every maintenance flow of this aggregation repo (flow
 vocabulary per GLOSSARY: `vendor sync`, `consolidation`, `patch record`,
-`distribution chain`, `pending update`). One discoverable skill, five branches —
+`distribution chain`, `pending update`). One discoverable skill, six branches —
 each branch's procedure lives in a disclosed reference loaded only when that
 branch fires. This skill replaces `consolidate-strays` and
 `my-skills-vendor-sync` (retired at the map #18 migration).
@@ -50,7 +51,8 @@ branch fires. This skill replaces `consolidate-strays` and
 
 ## Always run first — the stray check
 
-Every run starts with the mandatory stray dry-run (map #25):
+Every run starts with the mandatory stray dry-run (map #25) — except the
+standards-update branch, which touches neither `skills/` nor the store:
 
 ```
 node "$REPO/scripts/consolidate-strays.mjs"
@@ -73,6 +75,7 @@ classifies as **current**, **new stray**, or **modified stray**.
 | recording a patch deviation | [`references/patch-record.md`](references/patch-record.md) |
 | checking freshness / reading or closing a pending-update issue | [`references/freshness.md`](references/freshness.md) |
 | distributing to the canonical store (or retiring a skill) | [`references/distribute.md`](references/distribute.md) |
+| rolling a baseline upgrade into consumer `CODING_STANDARDS.md` files | [`references/standards-update.md`](references/standards-update.md) |
 
 If the request spans branches (e.g. "sync and then distribute"), run the
 branches **in order** — vendor-sync → distribute — never in parallel.
