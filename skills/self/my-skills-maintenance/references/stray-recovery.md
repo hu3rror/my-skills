@@ -37,13 +37,30 @@ A stray the user declines to adopt stays in the store untouched.
 `Applied new stray:` with the destination, and the rest were explicitly
 declined.
 
-## 3. Recover a modified stray: record first, then the copy
+## 3. Recover a modified stray: judge the side, then record, then copy
 
 The script never copies a modified stray — recovery preserves a fixed order
 (ADR-0002/0004): the deviation must be recorded **before** any consolidated
 copy changes, because the vendor sync skip-set comes from the patch records and
 would otherwise clobber the recovered edit on the next sync. The report prints
 a diff summary plus a `patches/<source>/` pointer for the deviation.
+
+A modified stray is a mismatch between the store copy and the consolidated
+copy — but the mismatch has two sides, only one of which is recovered:
+
+- **Store-side edit** (the edit sits in the store, the consolidated copy is
+  older): recover it — record first, then copy store → repo, steps below.
+- **Repo-side change** (the consolidated copy is newer — uncommitted worktree
+  edits, or a committed skill change not yet distributed — and the store is
+  just the last distributed snapshot): this is **pending distribution**, not a
+  stray. Recovery would roll the repo back to the store version and destroy
+the change; instead commit, push, and distribute it.
+
+Judge the side before anything else — never from the diff alone: `git -C
+"$REPO" status --porcelain` shows the skill's worktree changes (repo-side),
+and the report's diff orientation (`"-"` = repo copy, `"+"` = store) shows
+which side holds the newer content. When both sides carry edits, or the side
+is unclear, stop and ask the user. Only a store-side edit continues below.
 
 1. **Write the patch record** — follow the `patch-record.md` branch (B9/B10):
    a diff-verified record for a vendored source, a behavioral record for a

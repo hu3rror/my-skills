@@ -69,7 +69,7 @@ _Avoid_: notification issue, alert
 ## Stray recovery
 
 **Stray skill** (游离技能):
-A skill present in the canonical skills store that the distribution chain does not track, or whose content differs from the aggregation repo's consolidated copy. A new stray was written directly into the store; a modified stray is a local edit to a tracked copy that the next update or distribution would overwrite. Both are recovered by consolidation.
+A skill present in the canonical skills store that the distribution chain does not track, or whose content differs from the aggregation repo's consolidated copy. A new stray was written directly into the store; a modified stray is a local edit to a tracked copy that the next update or distribution would overwrite. Both are recovered by consolidation: recovery copies a store-side edit back into the repo, while a newer repo-side copy is a pending distribution — committed and pushed, never recovered.
 _Avoid_: orphan (reserved for unattributed upstream provenance), loose skill
 
 **Consolidation** (回收):

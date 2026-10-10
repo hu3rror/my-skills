@@ -5,11 +5,19 @@ skills store (`~/.agents/skills`), which pi and the other harnesses reading the
 standard Agent Skills location consume directly. The chain owns the lock file
 (`~/.agents/.skill-lock.json`); this branch never edits it by hand.
 
-## 1. Gate: zero strays
+## 1. Gate: zero store-side strays
 
-The mandatory stray check (router step 1) must read **zero** new/modified
-strays — a distribution with a stray present clobbers it. Any stray → settle
-via `stray-recovery.md` first.
+The mandatory stray check (router step 1) must read **zero** store-side
+new/modified strays before a distribution — a distribution with a store-side
+edit present clobbers it (an unrecovered edit written straight into the store).
+Settle those via `stray-recovery.md` first.
+
+Repo-side deviations are **not** a gate failure: a newer copy in the repo
+(uncommitted worktree edits, or a committed change not yet distributed) shows
+up as a modified stray because the dry-run compares against the worktree, but
+it is exactly what this branch ships — commit and push it, then distribute;
+the distribution overwriting the older store snapshot is the point, not a
+clobber.
 
 ## 2. Distribute with the CLI pinned
 
