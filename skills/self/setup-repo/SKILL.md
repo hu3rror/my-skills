@@ -20,18 +20,18 @@ One-run entry that makes a repo usable by the engineering skills. A thin orchest
 
 ### 1. Explore
 
-Run the `setup-matt-pocock-skills` exploration step: `git remote -v`, `AGENTS.md`/`CLAUDE.md` at the root, `GLOSSARY.md`/`GLOSSARY-MAP.md`, `docs/adr/`, `docs/agents/`, `.scratch/`, monorepo signals, and whether the `triage` skill is installed.
+`git init` when the directory has no `.git` — `git remote -v` errors outside a repo. Then run the exploration step: `git remote -v`, `AGENTS.md`/`CLAUDE.md` at the root, `GLOSSARY.md`/`GLOSSARY-MAP.md`, `docs/adr/`, `docs/agents/`, `.scratch/`, monorepo signals, and whether the `triage` skill is installed.
 
 ### 2. Ensure a remote when the repo has none
 
-When exploration found no remote at all (`git remote -v` empty), create the remote before the tracker setup:
+When exploration found no remote at all, create one before the tracker setup:
 
-1. If the directory is not yet a git repo, `git init`.
-2. If there is no commit yet (an empty directory has nothing to push), create a minimal initial commit first — a one-line `README.md` or `.gitignore` — because `git push` with no commits fails (`src refspec HEAD does not match any`); pushing after the remote exists would leave a created-but-empty remote behind.
-3. Create the repo: `gh repo create <dir-name> --private --source=. --push`. New GitHub repos enable Issues by default — no extra flag. The remote defaults to the directory name.
-4. On failure (`gh` unauthenticated, network, name clash): fall back to asking — offer GitHub / GitLab / local markdown / other.
+1. Directory is already a git repo (step 1).
+2. No commit yet? Create a minimal initial commit (`README.md` or `.gitignore`) — empty push fails (`src refspec HEAD does not match any`).
+3. `gh repo create <dir-name> --private --source=. --push` (Issues on by default; remote = dir name).
+4. Failure (`gh` unauthenticated / network / name clash) → fall back to asking (GitHub / GitLab / local markdown / other).
 
-The remote exists before `setup-matt-pocock-skills` runs, so its Section A finds a GitHub remote and proposes GitHub; its "local markdown for repos without a remote" fallback never fires.
+The remote must exist before the primitive runs — with a GitHub remote its Section A proposes GitHub, and the local-markdown fallback never fires.
 
 ### 3. Run `setup-matt-pocock-skills` with the defaults pre-filled
 
