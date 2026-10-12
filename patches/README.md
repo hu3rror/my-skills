@@ -43,6 +43,60 @@ diff** (the merge work's `git diff` output, `--- a/<upstream path>` headers;
 new local files use `--- /dev/null`). Behavioral records carry `## Static
 assert` + `## Live check (human re-run)` instead.
 
+## Example record
+
+A working modification record (the `artifact-language-*` records on
+`issue-tracker-*.md` are the live set):
+
+```yaml
+---
+id: setup-matt-pocock-skills.artifact-language-github
+file: skills/mattpocock/engineering/setup-matt-pocock-skills/issue-tracker-github.md
+upstream:
+  source: mattpocock/skills
+  path: skills/engineering/setup-matt-pocock-skills/issue-tracker-github.md
+verification: diff
+after: setup-matt-pocock-skills.quoted-assignee  # only when stacking
+summary: >-
+  One paragraph: what changed and why.
+---
+
+## Diff
+
+```diff
+--- a/skills/engineering/setup-matt-pocock-skills/issue-tracker-github.md
++++ b/skills/engineering/setup-matt-pocock-skills/issue-tracker-github.md
+@@ -49,3 +49,9 @@
+ - **Claim**: context line stating the record named by `after:` left it
+-- **Resolve**: old line
++- **Resolve**: new line
++- **Next bullet**: context on both sides keeps the hunk anchored
+```
+```
+
+Two traps that fail the byte reconstruction, both bitten for real:
+
+- **Path form**: both `--- a/` and `+++ b/` name the **upstream path**
+  (`skills/engineering/<skill>/…`), never the local layout
+  (`skills/mattpocock/…`). The verifier lays the pinned blob at the upstream
+  path and `git apply` targets the `b/` name there; a `b/` pointing at the
+  local layout fails with `No such file or directory` (verified on
+  `issue-tracker-*.md`, 2026-10; the retro records' `a/≠b/` shape still
+  passes, so the mechanism isn't fully settled — new records use the `a/==b/`
+  form).
+- **Stacking**: when a hunk's context states a line another record on the same
+  file changes, declare `after: <that record's id>` and write the context as
+  that record's **output**. Ordering is otherwise by collection order, and a
+  record applied too early breaks a sibling whose context it invalidates
+  (`quoted-assignee` / `windows-quoting` trail with the pre-change Resolve
+  line — the `artifact-language-*` records stack after them).
+- **Edge context**: a hunk whose change sits at the very start or end of the
+  block (no context on that side) is fragile (`git apply` can fail to locate
+  it even when the context lines exist, e.g. a context + pure-insertion hunk
+  on `handoff/SKILL.md` failed until the following line was added as trailing
+  context). Give each change context on **both sides**; a pure insertion
+  anchors on the line after the insertion point.
+
 ## The mechanical assertion
 
 `scripts/verify-patch-records.mjs` (CI: the script-tests job) does, per
