@@ -364,6 +364,51 @@ test("verifyAll: diff record without a diff block fails", () => {
   }
 });
 
+test("verifyAll: overlapping hunk ranges in one record fail well-formedness", () => {
+  // Two hunks sharing a context line (hunk 2's old range starts inside hunk
+  // 1's) fail git apply — the earlier hunk consumed the shared anchor — so
+  // the verifier must fail early with a hint, not at reconstruction time.
+  const f = makeFixture({
+    base: "# Fixture tool\n\nline one\n\nline two\n\nline three\n\nline four\n",
+    local: "# Fixture tool\n\nline one patched\n\nline two\n\nline three patched\n\nline four\n",
+    recordTexts: [[
+      "mattpocock/engineering/tool/one.md",
+      recordBody({
+        id: "fixture.overlap",
+        file: "skills/fixture/tool/SKILL.md",
+        up: { source: "fixture/repo", path: "skills/fixture/tool/SKILL.md" },
+        summary: "x",
+        origin: "PATCHES.md A-class row #1",
+        diff: [
+          "--- a/skills/fixture/tool/SKILL.md",
+          "+++ b/skills/fixture/tool/SKILL.md",
+          "@@ -3,5 +3,5 @@",
+          "-line one",
+          "+line one patched",
+          "",
+          " line two",
+          "",
+          " line three",
+          "@@ -5,5 +5,5 @@",
+          " line two",
+          "",
+          "-line three",
+          "+line three patched",
+          "",
+          " line four",
+        ].join("\n"),
+      }),
+    ]],
+  });
+  try {
+    const r = verifyAll({ root: f.repo, patchesDir: f.patches, metaDir: f.metaDir });
+    assert.match(r.report, /hunk ranges overlap/);
+    assert.ok(r.failures.length > 0);
+  } finally {
+    rmSync(f.root, { recursive: true, force: true });
+  }
+});
+
 test("verifyAll: behavioral record with a ## Diff block fails", () => {
   // recordBody can't produce both sections; build this one manually — a
   // behavioral record must never carry a diff to reconstruct.

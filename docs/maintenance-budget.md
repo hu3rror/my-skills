@@ -60,10 +60,10 @@ it replaces, including the prep that already serves it.
 - #23 rehoming (`c9715dd`): `vendor-sync.mjs` 482 → 797 (+315), `vendor-sync.test.mjs` 188 → 230 (+42);
 - #24 merge subcommand (`4db8749`): `vendor-sync-merge.test.mjs` (+352).
 
-**Budget rule**: total script lines (code + tests) ≤ **4327** (re-measured at
+**Budget rule**: total script lines (code + tests) ≤ **4407** (re-measured at
 the 2026-10-06 migration, formerly 3059 — see the re-measurement note above;
-raised from 4101 on 2026-10-07 for the ADR-0009 repo-location guard — see the
-note below).
+raised from 4101 on 2026-10-07 for the ADR-0009 repo-location guard, and from
+4327 on 2026-10-12 for the overlapping-hunk guard — see the notes below).
 Bumping it is a **deliberate, documented act** (date + reason here and in the
 guard).
 
@@ -75,6 +75,18 @@ check the maintenance scripts derive their root from) and the guard wiring in
 `consolidate-strays.mjs` / `vendor-sync.mjs` / `verify-patch-records.mjs` +
 one CLI test in `consolidate-strays.test.mjs`. Recorded per the bump rule
 (value raised in the guard test; date + reason here).
+
+### Overlapping-hunk guard (2026-10-12)
+
+Budget raised to **4407** (+80 over 4327) for the overlapping-hunk guard:
+`verify-patch-records.mjs` gains `overlappingHunkRanges()` — a static
+well-formedness check that fails a diff record whose adjacent hunks share a
+context line (old-file ranges overlap), which `git apply` rejects with a
+confusing per-file error (bitten on `implement.load-skills-invocation`,
+2026-10-12; `patches/README.md` trap #4 documents the shape and the
+merge-into-one-hunk rule). The +80 is the check, its offline test in
+`verify-patch-records.test.mjs`, and the README trap entry. Recorded per the
+bump rule (value raised in the guard test; date + reason here).
 
 ### CI surface
 
@@ -134,9 +146,9 @@ unified skill.
    one-command; the budget spent is bounded (the subcommand already exists
    and its tests are inside the budget).
 
-4. **Complexity budget.** Code+tests ≤ 4327 lines (4101 at the 2026-10-06
-   migration, raised 2026-10-07 for the ADR-0009 repo-location guard — see the
-   note above),
+4. **Complexity budget.** Code+tests ≤ 4407 lines (4101 at the 2026-10-06
+   migration, raised 2026-10-07 for the ADR-0009 repo-location guard, and
+   2026-10-12 for the overlapping-hunk guard — see the notes above),
    CI jobs ≤ 3 (2 after the
    #25 drop), common-case step counts only decrease. Every rule above is
    either machine-enforced (guard test) or acceptance-traced at migration

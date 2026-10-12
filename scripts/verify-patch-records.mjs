@@ -212,6 +212,35 @@ function createdPaths(diff) {
   return out;
 }
 
+// Adjacent hunks in one diff whose old-file ranges overlap — the trailing
+// context of one equals the leading context of the next — fail `git apply`:
+// the earlier hunk has already consumed the shared anchor line, so the later
+// one cannot re-locate (bitten on implement.load-skills-invocation, 2026-10).
+// git's own diff never emits this shape (it merges nearby changes into one
+// hunk); fail early with a hint instead of at apply time. New-file hunks
+// (`-0,0`) carry no range and are skipped.
+export function overlappingHunkRanges(diff) {
+  const hunks = [];
+  for (const line of (diff || "").split(/\r?\n/)) {
+    const m = line.match(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
+    if (m) hunks.push({ oldStart: Number(m[1]), oldCount: m[2] === undefined ? 1 : Number(m[2]) });
+  }
+  for (let i = 1; i < hunks.length; i++) {
+    const prev = hunks[i - 1];
+    const cur = hunks[i];
+    if (cur.oldCount === 0 || prev.oldCount === 0) continue;
+    if (cur.oldStart < prev.oldStart + prev.oldCount) {
+      return {
+        hunk: i + 1,
+        oldStart: cur.oldStart,
+        prevHunk: i,
+        prevOldEnd: prev.oldStart + prev.oldCount - 1,
+      };
+    }
+  }
+  return null;
+}
+
 // Topologically order a file-group's records by their `after:` edges. Returns
 // null on a cycle or a missing target (already caught by well-formedness; the
 // guard is a second wall for non-deterministic inputs).
@@ -279,6 +308,14 @@ export function verifyAll({ root = ROOT, patchesDir = PATCHES_DIR, metaDir = VEN
       if (!r.diff) fail(`diff record without a diff block: ${fm.id}`);
       else if (fences !== 1) fail(`expected exactly one diff block, found ${fences}: ${fm.id ?? r.rel}`);
       else if (!r.diff.trimStart().startsWith("---")) fail(`diff block not a unified diff: ${fm.id}`);
+      else {
+        const overlap = overlappingHunkRanges(r.diff);
+        if (overlap) {
+          fail(
+            `hunk ranges overlap in ${fm.id}: hunk ${overlap.hunk} starts at old line ${overlap.oldStart}, inside hunk ${overlap.prevHunk} (old lines end ${overlap.prevOldEnd}); git apply rejects this — merge the changes into one hunk or leave an unlisted gap line`,
+          );
+        }
+      }
     } else if (fm.verification === "behavioral") {
       if (r.diff) fail(`behavioral record with a ## Diff block: ${fm.id}`);
       const asserts = parseStaticAsserts(r.staticAssert);

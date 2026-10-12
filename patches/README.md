@@ -74,7 +74,7 @@ summary: >-
 ```
 ```
 
-Two traps that fail the byte reconstruction, both bitten for real:
+Four traps that fail the byte reconstruction, all bitten for real:
 
 - **Path form**: both `--- a/` and `+++ b/` name the **upstream path**
   (`skills/engineering/<skill>/…`), never the local layout
@@ -96,6 +96,16 @@ Two traps that fail the byte reconstruction, both bitten for real:
   on `handoff/SKILL.md` failed until the following line was added as trailing
   context). Give each change context on **both sides**; a pure insertion
   anchors on the line after the insertion point.
+- **Overlapping hunks**: two hunks in one record whose old-file ranges
+  overlap — the trailing context of the earlier one equals the leading context
+  of the next — fail `git apply`: the earlier hunk has already consumed the
+  shared anchor line, so the later one cannot re-locate (verified on
+  `implement.load-skills-invocation`, 2026-10; the verifier now fails such a
+  record early with a hint instead of at apply time). git's own diff never
+  emits this shape — it merges nearby changes into one hunk. Hand-write one
+  hunk per change cluster (merge the changes) or leave an unlisted gap line
+  between hunks; best of all, generate `## Diff` from real `git diff` output,
+  never by hand.
 
 ## The mechanical assertion
 
