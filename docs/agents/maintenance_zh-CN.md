@@ -16,7 +16,7 @@
 | 「回收游离技能」/「consolidate」 | stray-recovery | 扫描 → 采纳 new stray → modified 先记补丁再覆盖 | `0 new stray, 0 modified stray` |
 | 「记这笔补丁」 | patch-record | 在 `patches/<source>/` 写/改记录 → 验证 | 验证器 `ALL CHECKS PASS` |
 | 「查 freshness」/ 关 stale 的 pending issue | freshness | 读 + 重推导 pending 状态；关闭已过期的 | 得到准确、最新的待办图景 |
-| 「分发」/「退役某个技能」 | distribute | 对 store 做 `npx skills@` add/remove | store 与 lock 与仓库一致 |
+| 「分发」/「退役某个技能」 | distribute | 对 store 做 pinned `npx skills@<pinned>` add/remove（版本在 `my-skills-maintenance` 的 distribute 分支） | store 与 lock 与仓库一致 |
 
 所有分支：先跑只读 stray 干跑；结束时统一提「commit → push → 关 issue / 分发」；远程或破坏性写一律先等你确认。
 

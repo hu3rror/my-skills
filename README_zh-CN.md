@@ -34,7 +34,9 @@ pi 专属技能（`npm-release`、`my-pi-extension-maintenance`、`pi-session-se
 # 不要用 --all：它会对本机所有已检测 agent 建链接。
 # -a universal 只写 canonical store；单一
 # -a 目标会静默退化为 copy 模式（真实目录，非 junction）。
-npx skills add hu3rror/my-skills -a universal -s '*' -g -y
+# CLI 版本已 pin（map #26）：请在 my-skills-maintenance 的
+# distribute 分支里 bump，绝不要用 unpinned 形式。
+npx skills@1.7.0 add hu3rror/my-skills -a universal -s '*' -g -y
 ```
 
 分发链只写 canonical store，pi 与其它读取标准 Agent Skills 位置的 harness 直接消费，不建任何 per-agent 链接。`-a universal` 只写 canonical store——单一 `-a` 目标会静默退化为 copy 模式（把真实目录写进该 agent 自己的文件夹）；`--all` 会对本机所有已检测 agent 建链接，本仓库不需要，不要用。

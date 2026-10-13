@@ -59,7 +59,9 @@ copies (migration in ticket #5).
 # Do NOT use --all: it links every agent detected on this machine.
 # -a universal targets only the canonical store; a single
 # -a target silently falls back to copy mode (real dirs, not junctions).
-npx skills add hu3rror/my-skills -a universal -s '*' -g -y
+# CLI version is pinned (map #26): bump it in the my-skills-maintenance
+# distribute branch, never here unpinned.
+npx skills@1.7.0 add hu3rror/my-skills -a universal -s '*' -g -y
 ```
 
 The distribution chain writes the canonical store, which pi and the other

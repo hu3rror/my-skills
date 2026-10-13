@@ -25,7 +25,7 @@ release notes, …) are untouched.
 | “recover strays” / “consolidate” | stray-recovery | scan → adopt new strays → record-first the modified ones | `0 new stray, 0 modified stray` |
 | “record this patch” | patch-record | write the record at `patches/<source>/` → verify | verifier `ALL CHECKS PASS` |
 | “check freshness” / close a stale pending issue | freshness | read + re-derive the pending state; close a stale one | accurate, current pending picture |
-| “distribute” / “retire a skill” | distribute | `npx skills@` add/remove against the store | store + lock match the repo |
+| “distribute” / “retire a skill” | distribute | pinned `npx skills@<pinned>` add/remove against the store (version lives in the distribute branch of `my-skills-maintenance`) | store + lock match the repo |
 
 Every branch: run the read-only stray dry-run first; end by proposing
 commit → push → issue-close/distribution; nothing remote or destructive without
