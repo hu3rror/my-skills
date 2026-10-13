@@ -30,10 +30,18 @@ Break the work into **tracer bullet** tickets.
 
 - Each slice cuts a narrow but COMPLETE path through every layer (schema, API, UI, tests): vertical, NOT a horizontal slice of one layer
 - A completed slice is demoable or verifiable on its own
-- Each slice is sized to fit in a single fresh context window
+- Each slice is sized to fit in a single fresh context window's **smart zone**, not the window's raw advertised ceiling (smart-zone block below)
 - Any prefactoring should be done first
 
 </vertical-slice-rules>
+
+<smart-zone>
+
+A slice is sized to fit in one fresh session's **smart zone** — roughly the first 100K–150K tokens of a fresh context window, where the agent still reasons sharply. The window's advertised size is only the raw ceiling; past the smart zone the agent drifts into the **dumb zone**, still executing but sloppier, more forgetful, more mistake-prone. Plan around the smart zone, never the window: the practical budget is the tokens the agent works well within, not the tokens it can technically hold.
+
+Estimate the ticket's context spend (read + write + reasoning) and cut it until it lands comfortably inside the smart zone. Signals that a ticket overshoots into the dumb zone: the agent must read hundreds of files, write thousands of lines, or sustain many rounds of reasoning to land it. When in doubt, split it — a ticket drafted for the raw window is really several smart-zone tickets.
+
+</smart-zone>
 
 Give each ticket its **blocking edges**: the other tickets that must complete before it can start. A ticket with no blockers can start immediately.
 
@@ -50,6 +58,7 @@ Present the proposed breakdown as a numbered list. For each ticket, show:
 Ask the user:
 
 - Does the granularity feel right? (too coarse / too fine)
+- Does every ticket sit comfortably inside the smart zone, or would any push its agent into the dumb zone?
 - Are the blocking edges correct: does each ticket only depend on tickets that genuinely gate it?
 - Should any tickets be merged or split further?
 
@@ -72,6 +81,8 @@ Do NOT close or modify any parent issue.
 
 **What to build:** the end-to-end behaviour this ticket makes work, from the user's perspective, not a layer-by-layer implementation list.
 
+**Scale:** estimated to fit within one smart zone (roughly <150K tokens of read + write + reasoning)
+
 **Blocked by:** the numbers/titles of the tickets that gate this one, or "None (can start immediately)".
 
 **Status:** ready-for-agent
@@ -90,6 +101,8 @@ A reference to the parent issue on the tracker (if the source was an existing is
 ## What to build
 
 The end-to-end behaviour this ticket makes work, from the user's perspective, not layer-by-layer implementation.
+
+**Scale:** estimated to fit within one smart zone (roughly <150K tokens of read + write + reasoning)
 
 ## Acceptance criteria
 
