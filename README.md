@@ -17,7 +17,7 @@ the skill files, fork-style).
 | `skills/kill-ai-slop/<name>/` | [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop) | kill-ai-slop (upstream path is `skill/`; normalized to the source dir here) |
 | `skills/cloudflare/<name>/` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | security-audit (provenance traced; recorded in the local `~/.agents/.skill-lock.json`) |
 | `skills/awesome-copilot/<name>/` | [github/awesome-copilot](https://github.com/github/awesome-copilot) | create-readme (manual fork: remote README templates localized into `references/`; not in vendor-sync SOURCES, see `vendor/awesome-copilot.json`) |
-| `skills/self/<name>/` | self-authored | de-slop, my-skills-maintenance (general-purpose; de-slop carries `disable-model-invocation: true`, explicit invocation only; my-skills-maintenance is model-invoked — one entry for the aggregation repo's maintenance flows, with a description scoped to repo-maintenance vocabulary and a read-only dry-run first step, so other harnesses never fire it spuriously); write-release-notes (general-purpose, model-invoked — description scoped to GitHub Release-notes requests, so other harnesses fire it only when release notes are being written); setup-repo (general-purpose, `disable-model-invocation: true` — one-run per-repo setup driving `setup-matt-pocock-skills` then `setup-coding-standards`, see ADR-0005); npm-release, my-pi-extension-maintenance, pi-session-search (pi-specific, `disable-model-invocation: true`, so other harnesses never auto-trigger) |
+| `skills/self/<name>/` | self-authored | de-slop, my-skills-maintenance (general-purpose; de-slop carries `disable-model-invocation: true`, explicit invocation only; my-skills-maintenance is user-invoked (`disable-model-invocation: true`) — one entry for the aggregation repo's maintenance flows — onboarding, vendor sync, stray recovery, patch records, freshness, distribution, standards roll-outs; explicit invocation keeps other harnesses from firing it spuriously); write-release-notes (general-purpose, model-invoked — description scoped to GitHub Release-notes requests, so other harnesses fire it only when release notes are being written); setup-repo (general-purpose, `disable-model-invocation: true` — one-run per-repo setup driving `setup-matt-pocock-skills` then `setup-coding-standards`, see ADR-0005); npm-release, my-pi-extension-maintenance, pi-session-search (pi-specific, `disable-model-invocation: true`, so other harnesses never auto-trigger) |
 | `archive/` | — | soft-retirement home for unmaintained `self/` skills — kept in the repo but **not** distributed (the chain only scans `skills/`; see [archive/README.md](archive/README.md)); currently web-debug |
 
 **Discovery depth rule**: the `vercel-labs/skills` CLI discovery constrains only
@@ -61,7 +61,7 @@ copies (migration in ticket #5).
 # -a target silently falls back to copy mode (real dirs, not junctions).
 # CLI version is pinned (map #26): bump it in the my-skills-maintenance
 # distribute branch, never here unpinned.
-npx skills@1.7.0 add hu3rror/my-skills -a universal -s '*' -g -y
+npx skills@1.7.2 add hu3rror/my-skills -a universal -s '*' -g -y
 ```
 
 The distribution chain writes the canonical store, which pi and the other
@@ -134,6 +134,15 @@ node scripts/consolidate-strays.mjs --apply <name> [--to self]  # copy one new s
 
 Dry-run is the default and writes nothing; apply keeps the store copy in
 place; recovered edits go live only after commit + push + a distribution run.
+
+## Integrate a new skill
+
+To bring a new skill into the repo — a brand-new upstream source, a
+self-authored skill, or a loose file — load `my-skills-maintenance`
+explicitly and name the skill and its origin. Loading the skill file itself
+starts its usage documentation, not the integration flow; the onboarding
+branch of the maintenance skill is the one entry
+(`skills/self/my-skills-maintenance/references/onboarding.md`).
 
 ## Conventions
 

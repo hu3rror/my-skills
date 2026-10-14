@@ -12,7 +12,7 @@ conventions `docs/agents/issue-tracker.md`, design decisions in `docs/adr/`.
 ## Scope
 
 `my-skills-maintenance` is the **one entry for the repo's maintenance flows**
-(five branches). It replaced `consolidate-strays` + `my-skills-vendor-sync`.
+(seven branches). It replaced `consolidate-strays` + `my-skills-vendor-sync`.
 It is **not** a replacement for every skill: writing a skill loads the separate
 reference skill `writing-for-agents`, and the everyday skills (web, debug,
 release notes, …) are untouched.
@@ -26,8 +26,11 @@ release notes, …) are untouched.
 | “record this patch” | patch-record | write the record at `patches/<source>/` → verify | verifier `ALL CHECKS PASS` |
 | “check freshness” / close a stale pending issue | freshness | read + re-derive the pending state; close a stale one | accurate, current pending picture |
 | “distribute” / “retire a skill” | distribute | pinned `npx skills@<pinned>` add/remove against the store (version lives in the distribute branch of `my-skills-maintenance`) | store + lock match the repo |
+| “integrate / add / bring in a new skill” | onboarding | classify where the skill sits → gate content on `writing-for-agents` → new-source registration or `skills/self/` placement → propose distribution | skill copy commit-ready; gate passes |
+| “roll a baseline upgrade into consumer `CODING_STANDARDS.md` files” | standards-update | stamp-classify each target file → compose baseline region + old lower half → show diff → write per repo | every candidate upgraded or declined; byte-identity checks pass |
 
-Every branch: run the read-only stray dry-run first; end by proposing
+Every branch: run the read-only stray dry-run first (except standards-update,
+which touches neither `skills/` nor the store); end by proposing
 commit → push → issue-close/distribution; nothing remote or destructive without
 your go-ahead.
 

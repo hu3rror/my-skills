@@ -22,15 +22,25 @@ clobber.
 ## 2. Distribute with the CLI pinned
 
 The CLI version is **pinned** (decision, map #26): `npx skills` churns ~1–2
-releases a week and has an open silent-drops class of bugs (#2039), so an
-unpinned write-heavy step is non-reproducible.
+releases a week and silently drops unrecognised flags — the #2039 class: any
+`-`-prefixed token that is not an exact known option is discarded (add
+over-installs, remove no-ops) and the run exits 0, so an unpinned
+write-heavy step is non-reproducible. The pinned command below is the
+verified shape — space-form flags (`-s '*'`, never `--skill=*`) and known
+tokens only — it does not trip #2039; the pin plus this shape guard the
+chain against input variants (equals-form, misspelled flags) and version
+drift.
 
 ```
-npx skills@1.7.0 add hu3rror/my-skills -a universal -s '*' -g -y
+npx skills@1.7.2 add hu3rror/my-skills -a universal -s '*' -g -y
 ```
 
-Bump the version here deliberately when a needed behavior or fix lands; verify
-with `npx skills@<new> --version` first.
+**Current pin: 1.7.2** (bumped 2026-10-14 — changelog review found no new
+bugs for this chain's usage; 1.7.2 fixes BOM frontmatter parsing, treats pi
+as a universal agent, adds remove-by-source; #2039 remains unfixed in all
+1.7.x). Bump deliberately when a needed behavior or fix lands — next
+trigger: vercel-labs/skills#2086 merging — and verify with
+`npx skills@<new> --version` first.
 
 ## 3. Verify
 

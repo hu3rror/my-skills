@@ -35,7 +35,7 @@ for manual merge. Windows-side, move the two pi-specific skills
 and weave a PowerShell-execution-environment constraint into the existing
 `~/.pi/agent/AGENTS.md` structure (not as a standalone rule).
 
-Distribution chain: `npx skills@1.7.0 add hu3rror/my-skills -a universal -s '*' -g`
+Distribution chain: `npx skills@1.7.2 add hu3rror/my-skills -a universal -s '*' -g`
 writes the canonical copy to `~/.agents/skills`, which pi and other harnesses
 read directly — no per-agent links. (CLI version pinned, map #26; bump in the
 distribute branch of `my-skills-maintenance`, never here.)
@@ -90,7 +90,7 @@ distribute branch of `my-skills-maintenance`, never here.)
 14. As the maintainer, I want `security-audit`'s upstream provenance traced; if
     no source is found it lands under `skills/other/`, so that no skill is
     orphaned or mis-attributed.
-15. As the maintainer, I want `npx skills@1.7.0 add hu3rror/my-skills -a universal
+15. As the maintainer, I want `npx skills@1.7.2 add hu3rror/my-skills -a universal
     -s '*' -g` re-run after the migration so that the canonical
     `~/.agents/skills` reflects the new consolidated layout.
 16. As the maintainer, I want the conditional (B-class) issues — jq dependency
@@ -157,7 +157,7 @@ distribute branch of `my-skills-maintenance`, never here.)
   per-command checks on the exact patched commands under PowerShell. A passing
   scan is not the same as a command that runs.
 - **Modules tested**:
-  - Distribution: `npx skills@1.7.0 add hu3rror/my-skills -a universal -s '*' -g`
+  - Distribution: `npx skills@1.7.2 add hu3rror/my-skills -a universal -s '*' -g`
     succeeds; `npx skills list` shows all 27+ skills under `~/.agents/skills`;
     `npm-release`/`pi-extension-sync` are no longer installed from `~/.pi`
     (they live in `skills/self/` and ship through the canonical store).

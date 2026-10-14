@@ -6,7 +6,7 @@
 
 ## 适用范围
 
-`my-skills-maintenance` 是**仓库维护流程的唯一入口**（五条分支），替代了 `consolidate-strays` + `my-skills-vendor-sync`。它**不**替代其它技能：写技能正文时加载独立的参考技能 `writing-for-agents`，日常技能（web、debug、发布说明……）一律不受影响。
+`my-skills-maintenance` 是**仓库维护流程的唯一入口**（七条分支），替代了 `consolidate-strays` + `my-skills-vendor-sync`。它**不**替代其它技能：写技能正文时加载独立的参考技能 `writing-for-agents`，日常技能（web、debug、发布说明……）一律不受影响。
 
 ## 1. 使用 — 说一句，进分支
 
@@ -17,8 +17,10 @@
 | 「记这笔补丁」 | patch-record | 在 `patches/<source>/` 写/改记录 → 验证 | 验证器 `ALL CHECKS PASS` |
 | 「查 freshness」/ 关 stale 的 pending issue | freshness | 读 + 重推导 pending 状态；关闭已过期的 | 得到准确、最新的待办图景 |
 | 「分发」/「退役某个技能」 | distribute | 对 store 做 pinned `npx skills@<pinned>` add/remove（版本在 `my-skills-maintenance` 的 distribute 分支） | store 与 lock 与仓库一致 |
+| 「整合 / 纳入一个新技能」 | onboarding | 按技能所在位置分类 → `writing-for-agents` 把关内容 → 新源注册 / `skills/self/` 入库 → 提议分发 | 技能副本入库就绪，门槛通过 |
+| 「把新基线推进消费方 `CODING_STANDARDS.md`」 | standards-update | 逐个目标文件按 stamp 分类 → 拼 baseline 区 + 旧文件 marker 以下 → 展示 diff → 逐仓库确认后写入 | 每个候选已升级或明确拒绝；字节一致性检查通过 |
 
-所有分支：先跑只读 stray 干跑；结束时统一提「commit → push → 关 issue / 分发」；远程或破坏性写一律先等你确认。
+所有分支：先跑只读 stray 干跑（standards-update 除外——它不碰 `skills/` 与 store）；结束时统一提「commit → push → 关 issue / 分发」；远程或破坏性写一律先等你确认。
 
 ## 2. 验证
 

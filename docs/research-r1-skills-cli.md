@@ -75,6 +75,15 @@ and the maintenance guide copy the command but point at that branch for the
 version, so an unpinned run (bare `npx skills`, or a local-path source that
 drops `skillPath` from the lock) is a known failure on this repo.
 
+> **Updated 2026-10-14**: the pin moved to **1.7.2** — v1.7.1 (2026-10-06)
+> and v1.7.2 (2026-10-09) shipped after this snapshot, npm `latest` is now
+> 1.7.2. Changelog review plus a local `npx skills@1.7.2 --version` / `ls` /
+> `remove --help` check found no new bugs for this repo's chain usage (add's
+> flag shape unchanged; the fixes touch `sync`/`update`, BOM-frontmatter
+> parsing, pi-as-universal, remove-by-source); #2039 stays unfixed (PR #2086
+> open, `mergeable_state: dirty`) and is worked around by space-form flags.
+> Next bump trigger, recorded in the distribute branch: #2086 merging.
+
 **Sources**: issue JSON/comments/timeline `api.github.com/repos/vercel-labs/skills/issues/2039` (+ `/comments`, `/timeline` — includes PR #2086 state); `https://raw.githubusercontent.com/vercel-labs/skills/main/src/add.ts` (parseAddOptions, verified current); releases API; `https://registry.npmjs.org/skills` and `/skills/1.7.0`; hu3rror/my-skills README.md, PATCHES.md; mattpocock/skills#1012 (timeline cross-ref).
 **Confidence**: High for bug presence and unmerged fix (issue + source + PR state); note main may have moved since my fetch, but PR #2086 being unmerged and the changelogs of v1.5.25–v1.7.0 containing no parser-validation fix support the "still present" reading.
 

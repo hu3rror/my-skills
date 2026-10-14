@@ -11,7 +11,7 @@
 | `skills/mattpocock/{engineering,productivity}/<name>/` | [mattpocock/skills](https://github.com/mattpocock/skills) | 25 个技能（engineering 19 + productivity 6）；上游 `in-progress` / `misc` 分类及两个未使用的技能已从 vendor sync 排除（排除项见 `vendor/mattpocock.json`） |
 | `skills/kill-ai-slop/<name>/` | [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop) | kill-ai-slop（上游路径为 `skill/`，聚合后归一为来源目录） |
 | `skills/cloudflare/<name>/` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | security-audit（来源已溯源，记录于本机 `~/.agents/.skill-lock.json`） |
-| `skills/self/<name>/` | 自建 | de-slop、my-skills-maintenance（通用；de-slop 带 `disable-model-invocation: true`，仅显式调用；my-skills-maintenance 为模型调用——聚合仓库维护流程的统一入口，description 限定在仓库维护词汇，且首步只读 dry-run，其他 harness 不会误触发）；write-release-notes（通用，模型调用——description 限定在 GitHub Release 发布说明请求，只在写发布说明时触发）；setup-repo（通用，`disable-model-invocation: true`——一次性仓库 setup，驱动 `setup-matt-pocock-skills` 再 `setup-coding-standards`，见 ADR-0005）；npm-release、my-pi-extension-maintenance、pi-session-search（pi 专属，带 `disable-model-invocation: true`，避免其他 harness 自动触发） |
+| `skills/self/<name>/` | 自建 | de-slop、my-skills-maintenance（通用；de-slop 带 `disable-model-invocation: true`，仅显式调用；my-skills-maintenance 为显式调用（`disable-model-invocation: true`）——聚合仓库维护流程的统一入口——技能纳入、vendor sync、游离技能回收、补丁记录、新鲜度检查、分发、标准基线升级；显式调用避免其他 harness 误触发）；write-release-notes（通用，模型调用——description 限定在 GitHub Release 发布说明请求，只在写发布说明时触发）；setup-repo（通用，`disable-model-invocation: true`——一次性仓库 setup，驱动 `setup-matt-pocock-skills` 再 `setup-coding-standards`，见 ADR-0005）；npm-release、my-pi-extension-maintenance、pi-session-search（pi 专属，带 `disable-model-invocation: true`，避免其他 harness 自动触发） |
 | `archive/` | — | 不再维护的 `self/` 技能软退役存放处——保留在仓库但**不参与分发**（分发链只扫描 `skills/`，见 [archive/README.md](archive/README.md)）；当前含 web-debug |
 
 **发现深度约束**：`vercel-labs/skills` CLI 的发现规则只约束**技能目录**（含 `SKILL.md` 的目录）的深度——`skills/` 容器下最多三层（`skills/<cat>/<cat>/<name>/`）。本仓库技能目录最深为 `skills/mattpocock/<category>/<name>/`，在规则之内；技能目录内部的辅助文件（`agents/`、`references/`、`scripts/`）不受此限，可再往下嵌套。
@@ -36,7 +36,7 @@ pi 专属技能（`npm-release`、`my-pi-extension-maintenance`、`pi-session-se
 # -a 目标会静默退化为 copy 模式（真实目录，非 junction）。
 # CLI 版本已 pin（map #26）：请在 my-skills-maintenance 的
 # distribute 分支里 bump，绝不要用 unpinned 形式。
-npx skills@1.7.0 add hu3rror/my-skills -a universal -s '*' -g -y
+npx skills@1.7.2 add hu3rror/my-skills -a universal -s '*' -g -y
 ```
 
 分发链只写 canonical store，pi 与其它读取标准 Agent Skills 位置的 harness 直接消费，不建任何 per-agent 链接。`-a universal` 只写 canonical store——单一 `-a` 目标会静默退化为 copy 模式（把真实目录写进该 agent 自己的文件夹）；`--all` 会对本机所有已检测 agent 建链接，本仓库不需要，不要用。
@@ -72,6 +72,10 @@ node scripts/consolidate-strays.mjs --apply <name> [--to self]  # 把某个 new 
 ```
 
 默认 dry-run 不写任何文件；apply 保留 store 副本不动；回收的内容要真正生效，还需 commit + push + 再分发一次。
+
+## 整合新技能
+
+要把一个新技能整合进仓库——全新的上游源、自建技能或散落的技能文件——显式加载 `my-skills-maintenance` 并说明技能与它的来源。加载技能文件本身只会引入它的使用说明，不会启动整合流程；维护技能的 onboarding 分支是唯一入口（`skills/self/my-skills-maintenance/references/onboarding.md`）。
 
 每日 vendor freshness check（`.github/workflows/vendor-freshness-check.yml`，UTC 01:00 定时 + 手动触发）跑 dry-run，把结果变成指派给维护者的单个 `pending-update` issue——上游有未同步内容时开启，副本重新 current 后自动关闭；它从不改文件，真正 sync 仍为手动。
 

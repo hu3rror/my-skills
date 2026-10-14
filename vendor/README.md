@@ -7,8 +7,12 @@ these files instead of parsing `PATCHES.md` tables (map ticket #23).
 
 This is **data, not code** — the same rule ADR-0006 already applied to the
 exclusion list. Editing curation or pins is a change to a JSON file, never to
-the script. The script refuses to run when a source's meta is missing or
-invalid (a silently dropped pin or exclusion would unprotect a patch).
+the script — with one deliberate exception: registering a brand-new source in
+`scripts/vendor-sync.mjs` `SOURCES` (see the onboarding branch of
+`my-skills-maintenance`). Pins and exclusions stay data; the source list is
+the one addition that touches the script. The script refuses to run when a
+source's meta is missing or invalid (a silently dropped pin or exclusion
+would unprotect a patch).
 
 ## Schema
 
@@ -34,6 +38,15 @@ invalid (a silently dropped pin or exclusion would unprotect a patch).
 
 `skills/self/` has no meta file: self-authored skills have no upstream, and
 their provenance travels in the per-patch records instead.
+
+## Adding a new source
+
+A source this repo does not yet vendor needs two coordinated steps, both
+manual and deliberate: a `vendor/<name>.json` meta file (schema above) and a
+`SOURCES` registration in `scripts/vendor-sync.mjs` (`name`, `targetRoot`,
+`skillRoots`). The `my-skills-maintenance` onboarding branch
+(`skills/self/my-skills-maintenance/references/onboarding.md`) drives the full
+sequence — register, pin, sync, verify.
 
 ## Re-adding an excluded skill
 

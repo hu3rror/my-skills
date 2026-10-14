@@ -1,9 +1,9 @@
 ---
 name: my-skills-maintenance
 description: >-
-  Maintain the my-skills aggregation repo — vendor sync, stray recovery, patch
-  records, freshness, distribution, and CODING_STANDARDS baseline roll-outs.
-  The branch is picked from the request.
+  Maintain the my-skills aggregation repo — skill onboarding, vendor sync,
+  stray recovery, patch records, freshness, distribution, and CODING_STANDARDS
+  baseline roll-outs. The branch is picked from the request.
 disable-model-invocation: true
 ---
 
@@ -11,7 +11,7 @@ disable-model-invocation: true
 
 The single entry for every maintenance flow of this aggregation repo (flow
 vocabulary per GLOSSARY: `vendor sync`, `consolidation`, `patch record`,
-`distribution chain`, `pending update`). One discoverable skill, six branches —
+`distribution chain`, `pending update`). One discoverable skill, seven branches —
 each branch's procedure lives in a disclosed reference loaded only when that
 branch fires. This skill replaces `consolidate-strays` and
 `my-skills-vendor-sync` (retired at the map #18 migration).
@@ -64,6 +64,7 @@ classifies as **current**, **new stray**, or **modified stray**.
 
 | The request is about… | Load |
 |---|---|
+| integrating a new skill into the repo — new upstream source, self-authored, or a loose file | [`references/onboarding.md`](references/onboarding.md) |
 | resolving a pending update — sync, three-way merge patched files, bump pins | [`references/vendor-sync.md`](references/vendor-sync.md) |
 | consolidating or recovering stray skills | [`references/stray-recovery.md`](references/stray-recovery.md) |
 | recording a patch deviation | [`references/patch-record.md`](references/patch-record.md) |
