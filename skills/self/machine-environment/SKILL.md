@@ -2,9 +2,8 @@
 name: machine-environment
 description: >-
   Use when a bash command on this Windows machine throws "Maximum call stack
-  size exceeded" (or similar environment errors) without producing output —
-  the machine's known-broken commands and the working alternatives. Not for
-  other environments (WSL, CI, remote), where these commands are fine.
+  size exceeded" (or similar env errors) with no output — known-broken
+  commands and working alternatives. Not for WSL/CI/remote, where they work.
 ---
 
 # Machine environment — known traps on this Windows machine
