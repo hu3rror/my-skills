@@ -24,6 +24,10 @@
 //     2026-10-12: the overlapping-hunk guard — overlappingHunkRanges() static
 //     well-formedness check + its offline test (+80 lines, budget 4327 →
 //     4407, documented in docs/maintenance-budget.md).
+//     2026-10-19: the patch-manifest HTML report — generate-patches-report.{mjs,
+//     .test.mjs}, the standalone overview + its offline parser/ordering/stats
+//     suite (+692 lines, budget 4407 → 5099, documented in
+//     docs/maintenance-budget.md).
 //   - CI jobs: 3, one per workflow (script-tests, vendor-freshness-check,
 //     vendor-sync); #25 drops vendor-sync.yml at migration, so the
 //     post-migration surface is 2. The budget anchors at today's count.
@@ -44,7 +48,7 @@ import { fileURLToPath } from "node:url";
 const SCRIPTS = dirname(fileURLToPath(import.meta.url));
 const WORKFLOWS = join(SCRIPTS, "..", ".github", "workflows");
 
-const CODE_TESTS_BUDGET = 4407;
+const CODE_TESTS_BUDGET = 5099;
 const JOBS_BUDGET = 3;
 
 // wc -l parity: count newlines, not split chunks, so the number matches the

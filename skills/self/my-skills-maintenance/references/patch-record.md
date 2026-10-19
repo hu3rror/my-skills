@@ -40,6 +40,11 @@ frontmatter schema + unified-diff shape in `patches/README.md`. Records are LF.
 **Done when**: the verifier prints `ALL CHECKS PASS` and the test suite is
 green.
 
+**Report refresh**: after the checks pass, refresh the human-readable patch
+overview — `node scripts/generate-patches-report.mjs`. The HTML it writes is a
+regenerable artifact for local viewing only, never committed; the source of
+truth stays `patches/` and the script suite.
+
 ## 3. Lifecycle follows the keep-or-drop call
 
 - **Dropped** → `git rm` the record and the file it protected if dropped too.

@@ -60,10 +60,11 @@ it replaces, including the prep that already serves it.
 - #23 rehoming (`c9715dd`): `vendor-sync.mjs` 482 → 797 (+315), `vendor-sync.test.mjs` 188 → 230 (+42);
 - #24 merge subcommand (`4db8749`): `vendor-sync-merge.test.mjs` (+352).
 
-**Budget rule**: total script lines (code + tests) ≤ **4407** (re-measured at
+**Budget rule**: total script lines (code + tests) ≤ **5099** (re-measured at
 the 2026-10-06 migration, formerly 3059 — see the re-measurement note above;
-raised from 4101 on 2026-10-07 for the ADR-0009 repo-location guard, and from
-4327 on 2026-10-12 for the overlapping-hunk guard — see the notes below).
+raised from 4101 on 2026-10-07 for the ADR-0009 repo-location guard, from
+4327 on 2026-10-12 for the overlapping-hunk guard, and from 4407 on
+2026-10-19 for the patch-manifest HTML report — see the notes below).
 Bumping it is a **deliberate, documented act** (date + reason here and in the
 guard).
 
@@ -87,6 +88,20 @@ confusing per-file error (bitten on `implement.load-skills-invocation`,
 merge-into-one-hunk rule). The +80 is the check, its offline test in
 `verify-patch-records.test.mjs`, and the README trap entry. Recorded per the
 bump rule (value raised in the guard test; date + reason here).
+
+### Patch-manifest HTML report (2026-10-19)
+
+Budget raised to **5099** (+692 over 4407) for the standalone patch-manifest
+HTML report: `scripts/generate-patches-report.mjs` + `generate-patches-report.test.mjs`.
+The generator parses every record in `patches/` (frontmatter + diff / static
+asserts), orders siblings by `after:` topology, layers the working-tree state,
+and emits a single self-contained HTML overview for humans to eyeball the
+patch situation at a glance. It is wired into the maintenance skill's
+`patch-record` branch (refresh after every record write/verify); the report
+file itself is a regenerable artifact and is not committed. The test suite
+covers the three seams that would silently corrupt a report — frontmatter/body
+parsing, `after:` ordering, and the summary statistics. Recorded per the bump
+rule (value raised in the guard test; date + reason here).
 
 ### CI surface
 
@@ -146,10 +161,10 @@ unified skill.
    one-command; the budget spent is bounded (the subcommand already exists
    and its tests are inside the budget).
 
-4. **Complexity budget.** Code+tests ≤ 4407 lines (4101 at the 2026-10-06
-   migration, raised 2026-10-07 for the ADR-0009 repo-location guard, and
-   2026-10-12 for the overlapping-hunk guard — see the notes above),
-   CI jobs ≤ 3 (2 after the
+4. **Complexity budget.** Code+tests ≤ 5099 lines (4101 at the 2026-10-06
+   migration, raised 2026-10-07 for the ADR-0009 repo-location guard,
+   2026-10-12 for the overlapping-hunk guard, and 2026-10-19 for the
+   patch-manifest HTML report — see the notes above),
    #25 drop), common-case step counts only decrease. Every rule above is
    either machine-enforced (guard test) or acceptance-traced at migration
    (step counts via #28). "Maintenance cost" is now a number that moves only

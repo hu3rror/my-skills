@@ -46,10 +46,13 @@ function parseFrontmatter(raw) {
         if (line.trim() !== "" && !/^(origin|after|verification|id|file|upstream|summary):/.test(line)) {
           // summary ran into a sibling scalar without indentation — stop folding
           inSummary = false;
+          fm.summary = summaryLines.join(" ").trim();
         } else if (line.trim() === "") {
           continue; // blank line inside folded scalar
         } else {
+          // a new top-level key closes the folded summary; fold it now
           inSummary = false;
+          fm.summary = summaryLines.join(" ").trim();
         }
       }
       if (inSummary) {
@@ -58,17 +61,18 @@ function parseFrontmatter(raw) {
       }
     }
     const m = line.match(/^(\S+):(?:\s*(.*))?$/);
-    if (!m) continue;
-    const [, key, value] = m;
-    if (key === "upstream") { inNested = "upstream"; fm.upstream = {}; continue; }
     if (inNested === "upstream") {
-      if (/^\S/.test(line)) { inNested = null; }
-      else {
-        const sm = line.match(/^\s{2}(\S+):\s*(.*)$/);
+      // Inside an upstream block: an indented line is a nested key; a new
+      // top-level key closes the block and is handled below.
+      if (m) { inNested = null; } else {
+        const sm = line.match(/^\s+(\S+):\s*(.*)$/);
         if (sm) fm.upstream[sm[1]] = sm[2];
         continue;
       }
     }
+    if (!m) continue;
+    const [, key, value] = m;
+    if (key === "upstream") { inNested = "upstream"; fm.upstream = {}; continue; }
     if (key === "summary") {
       if (value === ">-" || value === ">") {
         inSummary = true;
@@ -83,18 +87,22 @@ function parseFrontmatter(raw) {
   return fm;
 }
 
-/** Split a record file into frontmatter + body sections. */
-function parseRecord(file) {
-  const text = readFileSync(file, "utf8");
+/** Parse one record's text (frontmatter + body) into structured parts. */
+export function parseRecord(text) {
   const parts = text.split(/^---\s*$/m);
   const fmRaw = parts[1] ?? "";
   const body = parts.slice(2).join("---\n") ?? "";
   const fm = parseFrontmatter(fmRaw);
 
   const section = (title) => {
-    const re = new RegExp(`^## ${title}\\s*$([\\s\\S]*?)(?=^## |\\Z)`, "m");
-    const m = body.match(re);
-    return m ? m[1].trim() : null;
+    const lines = body.split("\n");
+    const start = lines.findIndex((l) => l === `## ${title}`);
+    if (start === -1) return null;
+    let end = lines.length;
+    for (let i = start + 1; i < lines.length; i++) {
+      if (lines[i].startsWith("## ")) { end = i; break; }
+    }
+    return lines.slice(start + 1, end).join("\n").trim();
   };
 
   const diffBlock = (() => {
@@ -106,7 +114,57 @@ function parseRecord(file) {
   const statics = section("Static assert (CI-runnable)");
   const live = section("Live check (human re-run)");
 
-  return { fm, why, diff: diffBlock, statics, live, text };
+  return { fm, why, diff: diffBlock, statics, live };
+}
+
+/** Order records so that every `after:` dependency precedes its stacker. */
+export function orderByAfter(records) {
+  const byFile = new Map();
+  for (const r of records) {
+    const key = r.fm.file ?? r.rel;
+    if (!byFile.has(key)) byFile.set(key, []);
+    byFile.get(key).push(r);
+  }
+  const ordered = [];
+  for (const group of byFile.values()) {
+    const placed = new Set();
+    const done = new Set();
+    const place = (r, chain = new Set()) => {
+      if (done.has(r)) return;
+      if (chain.has(r)) { ordered.push(r); done.add(r); return; }
+      const afterId = r.fm.after;
+      if (afterId && !placed.has(r)) {
+        const dep = group.find((x) => x.fm.id === afterId);
+        if (dep && dep !== r) place(dep, new Set([...chain, r]));
+      }
+      if (!done.has(r)) { ordered.push(r); done.add(r); placed.add(r); }
+    };
+    for (const r of group) place(r);
+  }
+  return ordered;
+}
+
+/** Aggregate the manifest-level statistics the report header shows. */
+export function buildStats(ordered) {
+  const stats = {
+    total: ordered.length,
+    bySource: {},
+    byVerification: {},
+    files: new Map(),
+  };
+  for (const r of ordered) {
+    stats.bySource[r.source] = (stats.bySource[r.source] ?? 0) + 1;
+    const v = r.fm.verification ?? "?";
+    stats.byVerification[v] = (stats.byVerification[v] ?? 0) + 1;
+    const key = r.fm.file ?? r.rel;
+    if (!stats.files.has(key)) stats.files.set(key, []);
+    stats.files.get(key).push(r.fm.id);
+  }
+  const multiPatchFiles = [...stats.files.entries()]
+    .filter(([, ids]) => ids.length > 1)
+    .sort((a, b) => b[1].length - a[1].length);
+  const stacked = ordered.filter((r) => r.fm.after);
+  return { ...stats, multiPatchFiles, stacked };
 }
 
 // ---------------------------------------------------------------- manifest
@@ -116,7 +174,7 @@ const records = collectMd(patchesDir)
   .filter((p) => relative(patchesDir, p) !== "README.md")
   .map((p) => {
     const rel = relative(repoRoot, p);
-    const r = parseRecord(p);
+    const r = parseRecord(readFileSync(p, "utf8"));
     return {
       ...r,
       rel, // patches/... path of the record itself
@@ -130,28 +188,7 @@ const records = collectMd(patchesDir)
   });
 
 // order siblings on the same file by `after:` topology (stable fallback: id)
-const byFile = new Map();
-for (const r of records) {
-  const key = r.fm.file ?? r.rel;
-  if (!byFile.has(key)) byFile.set(key, []);
-  byFile.get(key).push(r);
-}
-const ordered = [];
-for (const group of byFile.values()) {
-  const placed = new Set();
-  const done = new Set();
-  const place = (r, chain = new Set()) => {
-    if (done.has(r)) return;
-    if (chain.has(r)) { ordered.push(r); done.add(r); return; }
-    const afterId = r.fm.after;
-    if (afterId && !placed.has(r)) {
-      const dep = group.find((x) => x.fm.id === afterId);
-      if (dep && dep !== r) place(dep, new Set([...chain, r]));
-    }
-    if (!done.has(r)) { ordered.push(r); done.add(r); placed.add(r); }
-  };
-  for (const r of group) place(r);
-}
+const ordered = orderByAfter(records);
 
 // ---------------------------------------------------------------- working tree
 
@@ -168,25 +205,7 @@ const diffText = git("diff").trim();
 const untrackedCount = statusShort.split("\n").filter((l) => l.startsWith("??")).length;
 // ---------------------------------------------------------------- stats
 
-const stats = {
-  total: records.length,
-  bySource: {},
-  byVerification: { diff: 0, behavioral: 0 },
-  files: new Map(), // local file -> [record ids]
-};
-for (const r of ordered) {
-  stats.bySource[r.source] = (stats.bySource[r.source] ?? 0) + 1;
-  const v = r.fm.verification ?? "?";
-  stats.byVerification[v] = (stats.byVerification[v] ?? 0) + 1;
-  const key = r.fm.file ?? r.rel;
-  if (!stats.files.has(key)) stats.files.set(key, []);
-  stats.files.get(key).push(r.fm.id);
-}
-const multiPatchFiles = [...stats.files.entries()]
-  .filter(([, ids]) => ids.length > 1)
-  .sort((a, b) => b[1].length - a[1].length);
-const stacked = ordered.filter((r) => r.fm.after);
-
+const stats = buildStats(ordered);
 // ---------------------------------------------------------------- html helpers
 
 const esc = (s) =>
@@ -283,7 +302,7 @@ const sourceOrder = [...new Set(ordered.map((r) => r.source))].sort(
 const statCard = (n, label, sub) => `
   <div class="stat"><div class="stat-n">${n}</div><div class="stat-l">${label}</div>${sub ? `<div class="stat-s">${sub}</div>` : ""}</div>`;
 
-const multiPatchRows = multiPatchFiles
+const multiPatchRows = stats.multiPatchFiles
   .map(([file, ids]) => `<tr><td class="mp-file">${esc(file)}</td><td class="mp-n">${ids.length}</td><td class="mp-ids">${esc(ids.join(" · "))}</td></tr>`)
   .join("");
 
@@ -396,8 +415,8 @@ const html = `<!DOCTYPE html>
   <div class="stats">
     ${statCard(stats.total, "patch records", "patches/**/*.md")}
     ${Object.entries(stats.byVerification).map(([k, v]) => statCard(v, k === "diff" ? "diff-verified" : "behavioral", k === "diff" ? "reconstructed vs pinned upstream" : "self-authored, no diff baseline")).join("")}
-    ${statCard(stacked.length, "stacked", "records with an `after:` dependency")}
-    ${statCard(multiPatchFiles.length, "multi-patch files", "files carrying &gt;1 patch")}
+    ${statCard(stats.stacked.length, "stacked", "records with an `after:` dependency")}
+    ${statCard(stats.multiPatchFiles.length, "multi-patch files", "files carrying &gt;1 patch")}
   </div>
 
   <section class="worktree">
@@ -405,7 +424,7 @@ const html = `<!DOCTYPE html>
     ${worktreeHtml}
   </section>
 
-  ${multiPatchFiles.length ? `
+  ${stats.multiPatchFiles.length ? `
   <h2>Files patched the most</h2>
   <table class="mp">
     <thead><tr><th>local file</th><th>#patches</th><th>record ids</th></tr></thead>
@@ -432,11 +451,15 @@ const html = `<!DOCTYPE html>
 </html>
 `;
 
-writeFileSync(outPath, html);
-const sizes = {
-  records: records.length,
-  diffRecords: ordered.filter((r) => r.diff).length,
-  behavioralRecords: ordered.filter((r) => r.fm.verification === "behavioral").length,
-  htmlBytes: Buffer.byteLength(html, "utf8"),
-};
-console.log(`wrote ${outPath} (${sizes.htmlBytes} bytes, ${sizes.records} records: ${sizes.diffRecords} diff + ${sizes.behavioralRecords} behavioral)`);
+// Write the report only when run directly — importing the module (tests)
+// must stay side-effect-free. `process.argv[1]` holds the entry script path.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  writeFileSync(outPath, html);
+  const sizes = {
+    records: records.length,
+    diffRecords: ordered.filter((r) => r.diff).length,
+    behavioralRecords: ordered.filter((r) => r.fm.verification === "behavioral").length,
+    htmlBytes: Buffer.byteLength(html, "utf8"),
+  };
+  console.log(`wrote ${outPath} (${sizes.htmlBytes} bytes, ${sizes.records} records: ${sizes.diffRecords} diff + ${sizes.behavioralRecords} behavioral)`);
+}
