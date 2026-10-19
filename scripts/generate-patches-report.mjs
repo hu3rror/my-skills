@@ -7,17 +7,32 @@
 // HTML file — no CDN, no external assets — for humans to eyeball the patch
 // situation at a glance.
 //
-// Read-only: never touches the repo working tree. Usage:
+// Read-only over the repo: never modifies a repo file. The only write is the
+// report artifact itself (patches-report.html at the repo root by default) —
+// a regenerable file, intentionally not committed (.gitignore). Usage:
 //   node scripts/generate-patches-report.mjs [out.html]
 //
 // Zero dependencies (Node built-ins only).
+//
+// The pure seams (parseRecord / orderByAfter / buildStats) are exported and
+// covered by generate-patches-report.test.mjs; the write happens only when
+// run directly. Unlike verify-patch-records.mjs's strict frontmatter parser
+// (which must throw on anything it can't represent), this parser is
+// deliberately tolerant — a report reader skips unknown lines rather than
+// failing the run.
 
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { assertRepoDir } from "./repo-guard.mjs";
+
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+// Module-level guard (ADR-0009): refuse to report against a copy outside the
+// aggregation repo — the git-state layer and the default output path both
+// depend on ROOT being the real repo.
+assertRepoDir(repoRoot);
 const outPath = resolve(process.argv[2] ?? join(repoRoot, "patches-report.html"));
 
 // ---------------------------------------------------------------- collection
@@ -196,13 +211,13 @@ function git(...args) {
   try {
     return execFileSync("git", ["-C", repoRoot, ...args], { encoding: "utf8" });
   } catch (e) {
-    return "";
+    return null; // distinguish "git failed" (null) from "clean" (empty string)
   }
 }
 const statusShort = git("status", "--short");
-const diffStat = git("diff", "--stat").trim();
-const diffText = git("diff").trim();
-const untrackedCount = statusShort.split("\n").filter((l) => l.startsWith("??")).length;
+const diffStat = git("diff", "--stat")?.trim() ?? null;
+const diffText = git("diff")?.trim() ?? null;
+const gitStateFailed = statusShort === null;
 // ---------------------------------------------------------------- stats
 
 const stats = buildStats(ordered);
@@ -307,6 +322,7 @@ const multiPatchRows = stats.multiPatchFiles
   .join("");
 
 const worktreeHtml = (() => {
+  if (gitStateFailed) return `<p class="clean">git status failed — working-tree state unavailable.</p>`;
   if (!statusShort) return `<p class="clean">Working tree clean — everything committed.</p>`;
   const rows = statusShort.split("\n").filter(Boolean).map((l) => {
     const flag = l.slice(0, 2).trim(); // "??" or "M" (worktree column)

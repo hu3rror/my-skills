@@ -8,3 +8,7 @@ Thumbs.db
 
 # Node deps — the repo's scripts use Node built-ins only; guard a stray install
 node_modules/
+
+# Regenerable report artifact — built by scripts/generate-patches-report.mjs,
+# never committed (the patch-record branch refreshes it locally).
+patches-report.html
