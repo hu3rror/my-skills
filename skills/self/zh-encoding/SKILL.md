@@ -3,6 +3,7 @@ name: zh-encoding
 description: >-
   Windows 中文/Unicode 编码处理：输出乱码（GBK/cp936）、中文检测/统计可疑、
   grep -P \x{...} 报错，或按 Unicode 语义读写中文文本时使用。
+disable-model-invocation: true
 ---
 
 # 中文/Unicode 编码处理（Windows）
