@@ -43,7 +43,10 @@ const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_REPO = resolve(SCRIPT_DIR, "..");
 
 const defaultStore = () => join(homedir(), ".agents", "skills");
-const defaultLock = () => join(homedir(), ".agents", ".skill-lock.json");
+export const defaultLock = () =>
+  process.env.XDG_STATE_HOME
+    ? join(process.env.XDG_STATE_HOME, "skills", ".skill-lock.json")
+    : join(homedir(), ".agents", ".skill-lock.json");
 
 const toPortable = (p) => p.split(sep).join("/");
 
@@ -560,7 +563,7 @@ deviation must first be recorded as a per-patch record at patches/<source>/
 
 Options:
   --store <dir>   canonical skills store (default: ~/.agents/skills)
-  --lock <file>   distribution lock file (default: ~/.agents/.skill-lock.json)
+  --lock <file>   distribution lock file (default: $XDG_STATE_HOME/skills/.skill-lock.json, else ~/.agents/.skill-lock.json)
   --repo <dir>    aggregation repo root (default: this script's parent, verified)
   --apply <name>  copy the named new stray into the repo (idempotent)
   --to <home>     destination home with --apply: other (default) or self

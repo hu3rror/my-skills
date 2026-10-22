@@ -60,11 +60,11 @@ it replaces, including the prep that already serves it.
 - #23 rehoming (`c9715dd`): `vendor-sync.mjs` 482 → 797 (+315), `vendor-sync.test.mjs` 188 → 230 (+42);
 - #24 merge subcommand (`4db8749`): `vendor-sync-merge.test.mjs` (+352).
 
-**Budget rule**: total script lines (code + tests) ≤ **5115** (re-measured at
+**Budget rule**: total script lines (code + tests) ≤ **5144** (re-measured at
 the 2026-10-06 migration, formerly 3059 — see the re-measurement note above;
 raised from 4101 on 2026-10-07 for the ADR-0009 repo-location guard, from
 4327 on 2026-10-12 for the overlapping-hunk guard, and from 4407 on
-2026-10-19 for the patch-manifest HTML report — see the notes below).
+2026-10-19 for the patch-manifest HTML report, and from 5115 on 2026-10-22 for the defaultLock XDG lock-path fix — see the notes below).
 Bumping it is a **deliberate, documented act** (date + reason here and in the
 guard).
 
@@ -105,6 +105,19 @@ frontmatter/body parsing, `after:` ordering, and the summary statistics. The
 guard, a git-failure marker that stops the report claiming "clean" when git
 failed, and the header notes. Recorded per the bump rule (value raised in the
 guard test; date + reason here).
+
+### defaultLock XDG lock-path fix (2026-10-22)
+
+Budget raised to **5144** (+29 over 5115) for the XDG lock-path fix in
+`consolidate-strays.mjs`: the default lock location now honours
+`XDG_STATE_HOME` (mirroring the distribution CLI's `getSkillLockPath` —
+`$XDG_STATE_HOME/skills/.skill-lock.json` when set, else `~/.agents/.skill-lock.json`),
+so the stray check finds the lock on XDG-configured Linux/WSL machines where
+the default previously misled with "lock file not found". The delta is the
+`defaultLock()` branch (+4) and its two-branch unit test in
+`consolidate-strays.test.mjs` (+25, incl. imports); the usage text and the
+distribute-branch reference were synced without adding lines. Recorded per
+the bump rule (value raised in the guard test; date + reason here).
 
 ### CI surface
 
@@ -164,10 +177,10 @@ unified skill.
    one-command; the budget spent is bounded (the subcommand already exists
    and its tests are inside the budget).
 
-4. **Complexity budget.** Code+tests ≤ 5115 lines (4101 at the 2026-10-06
+4. **Complexity budget.** Code+tests ≤ 5144 lines (4101 at the 2026-10-06
    migration, raised 2026-10-07 for the ADR-0009 repo-location guard,
    2026-10-12 for the overlapping-hunk guard, and 2026-10-19 for the
-   patch-manifest HTML report — see the notes above),
+   patch-manifest HTML report, and 2026-10-22 for the defaultLock XDG lock-path fix — see the notes above),
    #25 drop), common-case step counts only decrease. Every rule above is
    either machine-enforced (guard test) or acceptance-traced at migration
    (step counts via #28). "Maintenance cost" is now a number that moves only

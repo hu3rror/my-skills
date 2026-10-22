@@ -22,11 +22,12 @@ import {
 } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import {
   applyStray,
   consolidate,
+  defaultLock,
   diffDirectories,
   directoriesEqual,
   scanSkillDirectories,
@@ -79,6 +80,31 @@ function snapshot(dir) {
   return out;
 }
 
+// --- defaultLock ------------------------------------------------------------
+
+test("defaultLock prefers $XDG_STATE_HOME when set", () => {
+  const prev = process.env.XDG_STATE_HOME;
+  process.env.XDG_STATE_HOME = join("tmp", "xdg-state");
+  try {
+    assert.equal(
+      defaultLock(),
+      join("tmp", "xdg-state", "skills", ".skill-lock.json")
+    );
+  } finally {
+    if (prev === undefined) delete process.env.XDG_STATE_HOME;
+    else process.env.XDG_STATE_HOME = prev;
+  }
+});
+
+test("defaultLock falls back to ~/.agents/.skill-lock.json without XDG_STATE_HOME", () => {
+  const prev = process.env.XDG_STATE_HOME;
+  delete process.env.XDG_STATE_HOME;
+  try {
+    assert.equal(defaultLock(), join(homedir(), ".agents", ".skill-lock.json"));
+  } finally {
+    if (prev !== undefined) process.env.XDG_STATE_HOME = prev;
+  }
+});
 // --- classification ----------------------------------------------------------
 
 test("a store skill absent from the lock file and the repo is a new stray with its proposed destination", () => {

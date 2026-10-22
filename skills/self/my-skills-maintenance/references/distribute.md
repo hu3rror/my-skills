@@ -3,7 +3,7 @@
 Run the distribution chain that ships the aggregation repo into the canonical
 skills store (`~/.agents/skills`), which pi and the other harnesses reading the
 standard Agent Skills location consume directly. The chain owns the lock file
-(`~/.agents/.skill-lock.json`); this branch never edits it by hand.
+(`~/.agents/.skill-lock.json`, or `$XDG_STATE_HOME/skills/.skill-lock.json` when `XDG_STATE_HOME` is set); this branch never edits it by hand.
 
 ## 1. Gate: zero store-side strays
 
