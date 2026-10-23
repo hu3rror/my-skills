@@ -14,7 +14,7 @@ npm 发布链路里有几步一旦执行就不可逆(`git push --tags`、`npm pu
 
 - **每个"完成判据"都要用命令的实际输出核对,不要凭上一步的记忆判断"应该没问题"。** 例如步骤 1 摸底完的每一项,都应该是刚跑完对应命令、亲眼看到输出后填的值,而不是根据文件名或项目类型推测的。
 - **命令与旗标只从本 skill 正文、[references/workflow-template.yml](references/workflow-template.yml)、[references/workflow-template-staged.yml](references/workflow-template-staged.yml)、[references/troubleshooting.md](references/troubleshooting.md) 里取,不要凭印象改写或补充(尤其是 `npm stage` 子命令和 `gh` 参数)。** 这两个工具改动较快,凭记忆拼出的旗标很容易是过时或不存在的;不确定时先 `npm stage --help` / `npm publish --help` / `gh release create --help` 核实存在,再使用。
-- **git push / npm publish / npm stage approve 这类不可逆操作前,先把"我即将执行 X,因为 Y"说给用户听一遍,拿到当轮的明确授权再动手**,不要因为前面步骤顺利就自动往下推进到发布。
+- **git push / npm publish / npm stage approve、以及 `gh release create`/`edit`(写发布说明,对外发布)这类不可逆或对外操作前,先把"我即将执行 X,因为 Y"说给用户听一遍,拿到当轮的明确授权再动手**,不要因为前面步骤顺利就自动往下推进到发布。
 - 遇到报错时,先去 [references/troubleshooting.md](references/troubleshooting.md) 按症状查,不要凭经验改一个旗标就重试——同一条错误往往有好几种表面相似但处理方式不同的原因(比如 401 既可能是 token 权限边界,也可能是 workflow 文件名不匹配)。
 
 ## 步骤
@@ -62,8 +62,8 @@ npm 发布链路里有几步一旦执行就不可逆(`git push --tags`、`npm pu
 6. **直接流**:确认 `npm publish` 成功(run 结束后第 5 步已扫过 `--log-failed`)再 `npm view <name> version` 核实新版本已可见。**暂存流**:从日志取 stage-id——`gh run view <id> --log | Select-String "staged with id"`,行格式 `+ <name>@<version> (staged with id <uuid>)`;stage-id 交付给用户,approve/reject 由用户本人执行(见"后续人工步骤",需 2FA)。
 
 ### 7. 发布说明(Release Notes)
-**完成判据**:GitHub Release 里有分类整理过的说明,而不只是 `gh release create --generate-notes` 生成的 `Full Changelog: vX...vY` 一行比较链接。
-按 [write-release-notes](../write-release-notes/SKILL.md) skill 写发布说明:素材、分类模板、create/edit、验证都在那里,版本号直接用步骤 6 bump 出的 vX.Y.Z。npm 差异就一条:**直接流**下 workflow 已建占位 Release(`--generate-notes`),步骤 6 发布成功后用 `gh release edit` 覆盖为分类说明即可;**暂存流**下 workflow 不建 Release,维护者 approve 发布后由 agent 手动 `gh release create`。仓库若约定不建 Release,跳过与否按 write-release-notes 步骤 1 的仓库约定检查执行。
+**完成判据**:GitHub Release 里有分类整理过的说明(写入前已展示全文并取得当轮授权,见执行须知),而不只是 `gh release create --generate-notes` 生成的 `Full Changelog: vX...vY` 一行比较链接。
+按 [write-release-notes](../write-release-notes/SKILL.md) skill 写发布说明:素材、分类模板、展示确认、create/edit、验证都在那里,版本号直接用步骤 6 bump 出的 vX.Y.Z。npm 差异就一条:**直接流**下 workflow 已建占位 Release(`--generate-notes`),步骤 6 发布成功后 `gh release edit` 覆盖为分类说明;**暂存流**下 workflow 不建 Release,维护者 approve 发布后由 agent 手动 `gh release create`。两种流的 Release 写入都是对外发布:先按 write-release-notes 步骤 4 展示分类说明全文、拿到当轮授权,再 create/edit(执行须知)。仓库若约定不建 Release,跳过与否按 write-release-notes 步骤 1 的仓库约定检查执行。
 
 ### 8. 沉淀
 **完成判据**:AGENTS.md 发布约定与相关文档已同步。
