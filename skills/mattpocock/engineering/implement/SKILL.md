@@ -13,6 +13,6 @@ Load the "tdd" skill (read its SKILL.md) where possible, at pre-agreed seams.
 
 Run typechecking regularly, single test files regularly, and the full test suite once at the end.
 
-Once done, load the "code-review" skill (read its SKILL.md) to review the work.
+Once done, load the "no-comments" skill (read its SKILL.md), then load the "code-review" skill (read its SKILL.md) to review the work.
 
 Commit your work to the current branch.
