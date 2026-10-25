@@ -6,18 +6,14 @@ upstream:
   path: skills/engineering/to-tickets/SKILL.md
 verification: diff
 summary: >-
-  Step 6 added: ticket bodies are written in English. Tickets are work items
-  for agents, not primary content, so no `## Chinese Summary` comment is
-  attached to tickets, sub-issues, or follow-ups — a Chinese summary applies
-  only to primary content (the spec issue a `to-spec` run published, for a
-  personal repo), never per ticket or per run.
+  Step 6 added: ticket bodies are written in English — tickets are work items
+  for agents, not primary content.
 ---
 
 ## Why
 
-Tickets are derived work items for agents, not primary content; the rule makes
-explicit that Chinese summaries belong to the spec issue alone, preventing
-per-ticket annotation noise while keeping ticket bodies in English.
+Tickets are derived work items for agents, not primary content; the rule keeps
+ticket bodies in English.
 
 ## Diff
 
@@ -29,5 +25,5 @@ per-ticket annotation noise while keeping ticket bodies in English.
 +
 +### 6. Language
 +
-+Write ticket bodies in English. Tickets are work items for agents, not primary content — never attach `## Chinese Summary (non-authoritative)` comments to tickets, sub-issues, or follow-ups. A Chinese summary applies only to primary content (the spec issue a `to-spec` run published, for a personal repo), never per ticket or per run.
++Write ticket bodies in English. Tickets are work items for agents, not primary content.
 ```

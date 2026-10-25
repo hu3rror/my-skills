@@ -130,4 +130,4 @@ In either form, avoid **volatile references** — specific file paths, line numb
 
 ### 6. Language
 
-Write ticket bodies in English. Tickets are work items for agents, not primary content — never attach `## Chinese Summary (non-authoritative)` comments to tickets, sub-issues, or follow-ups. A Chinese summary applies only to primary content (the spec issue a `to-spec` run published, for a personal repo), never per ticket or per run.
+Write ticket bodies in English. Tickets are work items for agents, not primary content.
