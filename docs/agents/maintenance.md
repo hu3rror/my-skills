@@ -1,7 +1,8 @@
 # my-skills maintenance guide
 
-The single maintenance runbook for this aggregation repo. **To do anything,
-invoke the skill `my-skills-maintenance`** — it picks the right branch, starts
+The single maintenance runbook for this aggregation repo. **For any
+maintenance flow, invoke the skill `my-skills-maintenance`** — it picks the
+right branch, starts
 read-only, and proposes every write before anything happens. Hand the commands
 below if you'd rather drive it directly.
 
