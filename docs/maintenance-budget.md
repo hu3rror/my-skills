@@ -60,11 +60,11 @@ it replaces, including the prep that already serves it.
 - #23 rehoming (`c9715dd`): `vendor-sync.mjs` 482 → 797 (+315), `vendor-sync.test.mjs` 188 → 230 (+42);
 - #24 merge subcommand (`4db8749`): `vendor-sync-merge.test.mjs` (+352).
 
-**Budget rule**: total script lines (code + tests) ≤ **5144** (re-measured at
+**Budget rule**: total script lines (code + tests) ≤ **5155** (re-measured at
 the 2026-10-06 migration, formerly 3059 — see the re-measurement note above;
 raised from 4101 on 2026-10-07 for the ADR-0009 repo-location guard, from
 4327 on 2026-10-12 for the overlapping-hunk guard, and from 4407 on
-2026-10-19 for the patch-manifest HTML report, and from 5115 on 2026-10-22 for the defaultLock XDG lock-path fix — see the notes below).
+2026-10-19 for the patch-manifest HTML report, from 5115 on 2026-10-22 for the defaultLock XDG lock-path fix, and from 5144 on 2026-10-29 for the ste-zh onboarding — see the notes below).
 Bumping it is a **deliberate, documented act** (date + reason here and in the
 guard).
 
@@ -105,6 +105,17 @@ frontmatter/body parsing, `after:` ordering, and the summary statistics. The
 guard, a git-failure marker that stops the report claiming "clean" when git
 failed, and the header notes. Recorded per the bump rule (value raised in the
 guard test; date + reason here).
+
+### ste-zh onboarding (2026-10-29)
+
+Budget raised to **5155** (+11 over 5144) for the ste-zh vendor onboarding:
+`vendor-sync.mjs` gains the new-source registration (SOURCES entry, +7
+lines) and a `.git` exclusion in `walkFiles` (+4 over the old two-line body).
+The exclusion is required because ste-zh maps at its clone root (`upstream:
+""`), so the shallow clone's `.git/` would otherwise be enumerated and copied
+as skill files; the three prior sources all map at subdirectories and never hit
+it. Recorded per the bump rule (value raised in the guard test; date + reason
+here).
 
 ### defaultLock XDG lock-path fix (2026-10-22)
 

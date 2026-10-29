@@ -1,0 +1,7 @@
+{
+  "name": "ste-zh",
+  "repo": "dualface/ste-zh",
+  "url": "https://github.com/dualface/ste-zh.git",
+  "pin": "27d57e4d6609ce88e14dd15cbae355223a83b246",
+  "note": "Onboarded 2026-10-29: ASD-STE100-based Simplified Technical Chinese report-standard skill (upstream root = skill root). Pin = 2026-10-11 HEAD (stable since). Two patches recorded: disable-model-invocation, compatibility note (AGENTS.md core-rules relationship, NEED-VERIFY mapping, PR/Release exemption)."
+}

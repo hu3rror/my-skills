@@ -67,6 +67,13 @@ const SOURCES = [
       },
     ]),
   },
+  {
+    name: "ste-zh",
+    targetRoot: "skills/ste-zh/ste",
+    skillRoots: fixedSkillRoots([
+      { upstream: "", target: "skills/ste-zh/ste" },
+    ]),
+  },
 ];
 
 // Verdicts that leave work for the human: the subcommand exits 1 when any
@@ -386,8 +393,12 @@ function walkFiles(dir, base = dir) {
   const out = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...walkFiles(full, base));
-    else if (entry.isFile()) out.push(relative(base, full).split(sep).join("/"));
+    if (entry.isDirectory()) {
+      // A source mapped at its clone root carries the shallow clone's .git
+      // directory; it is never part of a skill and must not be vendored.
+      if (entry.name === ".git") continue;
+      out.push(...walkFiles(full, base));
+    } else if (entry.isFile()) out.push(relative(base, full).split(sep).join("/"));
   }
   return out;
 }

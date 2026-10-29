@@ -49,7 +49,7 @@ import { fileURLToPath } from "node:url";
 const SCRIPTS = dirname(fileURLToPath(import.meta.url));
 const WORKFLOWS = join(SCRIPTS, "..", ".github", "workflows");
 
-const CODE_TESTS_BUDGET = 5144;
+const CODE_TESTS_BUDGET = 5155;
 const JOBS_BUDGET = 3;
 
 // wc -l parity: count newlines, not split chunks, so the number matches the
