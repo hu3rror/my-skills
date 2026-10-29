@@ -1,14 +1,11 @@
 ---
 disable-model-invocation: true
 name: ste
-description: >
-  Make the agent report results to the user by the ASD-STE100 (Simplified
-  Technical English) principles, in Chinese: key information first, one word one
-  meaning, one fact per sentence, fixed status words, honest verification
-  state, short sentences. Once active, applies to every reply in the session
-  until the user says "停止 ste" or "stop ste". 让 Agent 按 ASD-STE100
-  原则用中文向用户汇报结果. Trigger: "/ste", "用 STE 规范输出",
-  "按 ASD-STE100 汇报", "简化技术中文", "report in STE style".
+description: >-
+  Report results to the user in Simplified Technical Chinese per ASD-STE100
+  conventions: key information first, fixed status words, honest verification
+  state, short sentences. Use when the user asks for STE-style reporting, or
+  invokes /ste, 用 STE 规范输出, 按 ASD-STE100 汇报.
 ---
 
 # ste-zh：简化技术中文
