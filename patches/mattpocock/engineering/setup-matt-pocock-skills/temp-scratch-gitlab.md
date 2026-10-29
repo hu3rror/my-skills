@@ -26,7 +26,7 @@ the template makes every generated tracker carry the pointer.
 ```diff
 --- a/skills/engineering/setup-matt-pocock-skills/issue-tracker-gitlab.md
 +++ b/skills/engineering/setup-matt-pocock-skills/issue-tracker-gitlab.md
-@@ -22,6 +22,10 @@
+@@ -22,6 +22,10 @@ Issues and specs for this repo live as GitLab issues. Use the [`glab`](https://g
  
  Infer the repo from `git remote -v`; `glab` does this automatically when run inside a clone.
  
