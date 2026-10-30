@@ -36,9 +36,9 @@ context — absent record is a `(待验证)` gap, never an empty set.
 ```diff
 --- a/skills/productivity/grilling/SKILL.md
 +++ b/skills/productivity/grilling/SKILL.md
-@@ -28,5 +28,9 @@
+@@ -27,6 +27,10 @@
  
- Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (filesystem, tools, etc.), dispatch a sub-agent to find it; don't ask the user for anything you could look up yourself. Don't block on it: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.
+ Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (filesystem, tools, etc.), dispatch a sub-agent with a fresh context window to find it; don't ask the user for anything you could look up yourself. Don't block on it: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.
  
 -A recommended answer is a claim, not an opinion: it must rest on a fact you have verified (via the filesystem, tools, docs, or a sub-agent). When a recommendation depends on a fact you have not verified, label it `(待验证)` inline, name the missing fact and how you would check it — never present it as settled.
 +A recommended answer is a claim, not an opinion: it must rest on a fact you have verified (via the filesystem, tools, docs, or a sub-agent) and name the source, so the fact carries an evidence chain a later round can re-check. When a recommendation depends on a fact you have not verified, label it `(待验证)` inline, name the missing fact and how you would check it — never present it as settled. A round is complete only when every recommendation has passed this check.
