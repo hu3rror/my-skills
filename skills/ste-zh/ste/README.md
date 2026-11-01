@@ -4,7 +4,7 @@
 
 一个面向 AI Agent 的任务汇报规范 skill。借鉴航空与工业界严谨的 **ASD-STE100**（Simplified Technical English，简化技术英语）原则，约束 Agent 用清晰、严密且无歧义的中文汇报工作结果。
 
-Agent 的日常汇报常常过程冗长、推测含糊，或者漏掉关键的验证证据。开启 `ste-zh` 后，Agent 将遵循受控中文规范进行汇报：**关键信息先行、实证说话、状态固定、一目了然**。
+Agent 的日常汇报常常过程冗长、推测含糊，或者漏掉关键的验证证据。显式激活 `ste-zh` 后，Agent 将遵循受控中文规范进行汇报：**关键信息先行、实证说话、状态固定、一目了然**。未激活时，任何回复都不受影响。
 
 > 💡 本 skill 仅规范 Agent 向用户汇报与讨论时的表达方式，绝不影响项目代码、注释、Commit 信息及生成的文件内容。
 
@@ -58,6 +58,8 @@ Agent 的日常汇报常常过程冗长、推测含糊，或者漏掉关键的�
 
 ## 安装
 
+安装后本 skill 不会自动生效，必须按[使用方式](#使用方式)显式激活。
+
 ### 推荐：使用 `skills` CLI 安装
 
 [`skills`](https://github.com/vercel-labs/skills) 是 Vercel Labs 推出的 Agent Skill 管理工具，支持 Claude Code、Cursor、Codex 等主流环境。工具会自动按配置将本技能安装至 `ste` 目录。
@@ -103,13 +105,13 @@ git clone https://github.com/dualface/ste-zh.git ~/.claude/skills/ste
 
 ## 使用方式
 
-在对话中输入以下任意指令，即可启用本 skill：
+本 skill 只在显式激活后生效，任务结果汇报也不会自动使用。在对话中输入以下任意指令，即可激活本 skill：
 
 - `/ste`
 - 「用 STE 规范输出」
 - 「按 ASD-STE100 汇报」
 
-启用后，当前会话中的所有汇报都将严格按照本规范组织。如需退出，发送「停止 ste」或「stop ste」即可。
+激活后，当前会话中 Agent 给用户的全部回复都按本规范组织。新会话必须重新激活。如需退出，发送「停止 ste」或「stop ste」即可。
 
 > 更高优先级指令和用户明确指定的输出格式优先。同级风格规则冲突且用户未明确指定风格时，按本 skill 写。
 
@@ -117,17 +119,7 @@ git clone https://github.com/dualface/ste-zh.git ~/.claude/skills/ste
 
 - **运行机制**：本 skill 靠 Agent 遵守上下文中的指令生效，没有程序强制执行。
 - **上下文衰减**：在极长会话或发生上下文压缩（compaction）后，Agent 可能会遗忘指令规范。若发现输出风格退化，随时重新发送 `/ste` 即可恢复。
-- **全局常驻**：如希望每个会话默认开启，可将「每个会话开始时加载 ste skill」写入 Agent 的全局规则中（例如 Claude Code 的 `~/.claude/CLAUDE.md` 或 `~/.claude/rules/` 规则文件）。
-
----
-
-## 实战配合：与 Kander 协同
-
-作者在使用 [Kander](https://github.com/dualface/kander)（多 Agent 看板调度工具）并行调度多个任务时，重度依赖本 skill：
-
-- **高效扫视**：看板上多张任务卡并行流转，每张卡的汇报首句给出当前关键信息，便于查看任务进展。
-- **完成与验证分开**：代码修改执行完毕、运行检查未执行时，可以写「已完成：代码修改。运行效果未验证。」验收条件来自用户要求、适用的项目要求和任务目标。必需检查未执行或失败时，不得宣称整项任务已完成。已知失败不能改写成「已完成，未验证」。
-- **极简决策**：需要人工确认的阻塞点被清晰格式化为编号选项，在 Agent 会话中回复数字即可快速放行。
+- **全局常驻**：如希望每个会话默认开启，可将「每个会话开始时激活 ste skill」写入 Agent 的全局规则中（例如 Claude Code 的 `~/.claude/CLAUDE.md` 或 `~/.claude/rules/` 规则文件）。规则中写明的要求算显式激活。
 
 ---
 
@@ -158,8 +150,8 @@ git clone https://github.com/dualface/ste-zh.git ~/.claude/skills/ste
 
 ## 作者的其他项目
 
-欢迎体验作者 [dualface](https://github.com/dualface) 的其他项目：
+欢迎体验作者 [dualface](https://dualface.dev/) 的其他项目：
 
-- [Kander](https://github.com/dualface/kander)：规则驱动的多 Agent 看板调度工具，内置独立审核与自动化交付门禁。
-- [Ullage](https://github.com/dualface/ullage-cli)：本地守护进程与 CLI 工具，查看 Claude、ChatGPT、Grok、Cursor 等订阅的用量。
-- [QuickTUI](https://quicktui.ai/)：适用于各类编码 Agent 的手机端完整终端，支持自托管直连，单台主机免费。
+- [Kander](https://github.com/dualface/kander)：规则驱动的多 Agent 看板调度，内置独立审核与交付门禁。
+- [Ullage](https://github.com/dualface/ullage-cli)：本地守护进程 + CLI，查看 Claude、ChatGPT、Grok、Cursor 等订阅的用量。
+- [QuickTUI](https://quicktui.ai/)：手机上的完整终端，适用于任何编码 Agent。自托管直连，单台主机免费。
