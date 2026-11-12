@@ -1,5 +1,6 @@
 ---
 name: pi-rightclick-paste-patch
+disable-model-invocation: true
 description: >-
   显式触发：给已安装的最新 pi 打"Windows Terminal / WSL 下 fullscreen 模式右键粘贴失效"
   的临时补丁。pi 更新会覆盖补丁，更新后重跑本 skill 即可。已打过则幂等跳过。
