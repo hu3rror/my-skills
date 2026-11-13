@@ -2,6 +2,6 @@
   "name": "ste-zh",
   "repo": "dualface/ste-zh",
   "url": "https://github.com/dualface/ste-zh.git",
-  "pin": "22f868ec3ab77e902571379ad1eaccee4c38fdac",
-  "note": "Onboarded 2026-10-29: ASD-STE100-based Simplified Technical Chinese report-standard skill (upstream root = skill root). Pin = 2026-11-01 HEAD (c213c07: ste 改为仅在用户显式激活后生效 + 3 doc commits). Three patches recorded: disable-model-invocation, AGENTS.md compat note, description rewrite (459->267; reshaped 2026-11-01, keeps compressed English description, upstream's explicit-activation wording absorbed via merged 生效与持续 section instead)."
+  "pin": "f7c104315045849e7bce357664273b4e99bc5119",
+  "note": "Onboarded 2026-10-29: ASD-STE100-based Simplified Technical Chinese report-standard skill (upstream root = skill root). Pin = 2026-11-12 HEAD (f7c1043: PR #3, README 补 WorkBuddy 安装路径与全局常驻配置). Three patches recorded: disable-model-invocation, AGENTS.md compat note, description rewrite (459->267; reshaped 2026-11-01, keeps compressed English description, upstream's explicit-activation wording absorbed via merged 生效与持续 section instead)."
 }
