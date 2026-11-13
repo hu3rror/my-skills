@@ -33,7 +33,7 @@ would unprotect a patch).
 |---|---|---|
 | `mattpocock.json` | [mattpocock/skills](https://github.com/mattpocock/skills) | vendored; 4 excluded paths; release-tracked |
 | `kill-ai-slop.json` | [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop) | vendored |
-| `cloudflare.json` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | vendored; ships unpatched (pin = provenance trace) |
+| `cloudflare.json` | [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) | vendored; 1 patch (disable-model-invocation) |
 | `awesome-copilot.json` | [github/awesome-copilot](https://github.com/github/awesome-copilot) | manual fork, **not** in `vendor-sync.mjs` `SOURCES`; pin kept for provenance and the #10 diff baseline |
 | `ste-zh.json` | [dualface/ste-zh](https://github.com/dualface/ste-zh) | vendored; 3 patches (disable-model-invocation, AGENTS.md compat note, description rewrite); upstream root = skill root |
 
