@@ -29,6 +29,9 @@
 //     suite (+692 lines, budget 4407 → 5099), then the code-review follow-up
 //     (ADR-0009 repo guard, git-failure marker, header notes: +16 → 5115,
 //     documented in docs/maintenance-budget.md).
+//     2026-11-13: the externally-managed store-skill exclusion —
+//     isExternallyManaged() + the fourth report class + its two tests (+62,
+//     budget 5155 → 5217, documented in docs/maintenance-budget.md).
 //   - CI jobs: 3, one per workflow (script-tests, vendor-freshness-check,
 //     vendor-sync); #25 drops vendor-sync.yml at migration, so the
 //     post-migration surface is 2. The budget anchors at today's count.
@@ -49,7 +52,7 @@ import { fileURLToPath } from "node:url";
 const SCRIPTS = dirname(fileURLToPath(import.meta.url));
 const WORKFLOWS = join(SCRIPTS, "..", ".github", "workflows");
 
-const CODE_TESTS_BUDGET = 5155;
+const CODE_TESTS_BUDGET = 5217;
 const JOBS_BUDGET = 3;
 
 // wc -l parity: count newlines, not split chunks, so the number matches the

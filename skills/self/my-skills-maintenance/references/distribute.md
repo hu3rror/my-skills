@@ -12,6 +12,10 @@ new/modified strays before a distribution — a distribution with a store-side
 edit present clobbers it (an unrecovered edit written straight into the store).
 Settle those via `stray-recovery.md` first.
 
+**Externally managed** store skills (another application writes them; their
+`SKILL.md` carries a `<tool>-managed-skill` marker) are not strays and never
+gate a distribution — the report counts them separately.
+
 Repo-side deviations are **not** a gate failure: a newer copy in the repo
 (uncommitted worktree edits, or a committed change not yet distributed) shows
 up as a modified stray because the dry-run compares against the worktree, but

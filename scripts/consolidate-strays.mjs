@@ -73,6 +73,17 @@ function isRealDirectory(p) {
   return st.isDirectory() && !st.isSymbolicLink();
 }
 
+// A store skill carrying a managed-skill marker is written and rewritten by
+// another tool (Sheprd maintains herdr-gpui-browser), so the repo can neither
+// adopt it nor safely overwrite it: it never counts as a stray, and the
+// distribution gate ignores it.
+const MANAGED_MARKER = /<!--\s*\S+-managed-skill\b/;
+export function isExternallyManaged(dir) {
+  const skillFile = join(dir, "SKILL.md");
+  if (!existsSync(skillFile)) return false;
+  return MANAGED_MARKER.test(readFileSync(skillFile, "utf8"));
+}
+
 // --- comparison -------------------------------------------------------------
 
 // Recursively collect the files under a directory (symbolic links are not
@@ -299,6 +310,9 @@ export function classifyStrays(skills, lock, repoRoot) {
   const tracked = (lock && lock.skills) || {};
   const repoCopies = indexConsolidatedCopies(repoRoot);
   return skills.map((skill) => {
+    if (isExternallyManaged(skill.dir)) {
+      return { ...skill, kind: "externally-managed" };
+    }
     const lockEntry = tracked[skill.name];
     const repoCopy = lockEntry
       ? resolve(repoRoot, dirname(lockEntry.skillPath))
@@ -422,7 +436,12 @@ function modifiedStrayDetail(c, repo) {
 }
 
 export function buildReport({ store, lock, repo, classified }) {
-  const byKind = { "new-stray": [], "modified-stray": [], current: [] };
+  const byKind = {
+    "new-stray": [],
+    "modified-stray": [],
+    "externally-managed": [],
+    current: [],
+  };
   for (const c of classified) byKind[c.kind].push(c);
 
   const lines = [
@@ -445,11 +464,18 @@ export function buildReport({ store, lock, repo, classified }) {
       lines.push("");
     }
   }
+  if (byKind["externally-managed"].length > 0) {
+    lines.push(
+      `externally managed (${byKind["externally-managed"].length}) — not a stray, skipped`
+    );
+    for (const c of byKind["externally-managed"]) lines.push(`  ${c.name}`);
+    lines.push("");
+  }
   lines.push(`current (${byKind["current"].length})`);
   for (const c of byKind["current"]) lines.push(`  ${c.name}`);
   lines.push("");
   lines.push(
-    `Totals: ${byKind["current"].length} current, ${byKind["new-stray"].length} new stray, ${byKind["modified-stray"].length} modified stray.`
+    `Totals: ${byKind["current"].length} current, ${byKind["new-stray"].length} new stray, ${byKind["modified-stray"].length} modified stray, ${byKind["externally-managed"].length} externally managed.`
   );
   return lines.join("\n");
 }
@@ -511,7 +537,10 @@ export function main(argv = process.argv.slice(2)) {
     const { classified, report } = consolidate(args);
     console.log(report);
     // Non-zero when strays exist, so callers and CI can key on the result.
-    if (classified.some((c) => c.kind !== "current")) process.exitCode = 2;
+    if (
+      classified.some((c) => c.kind !== "current" && c.kind !== "externally-managed")
+    )
+      process.exitCode = 2;
   } catch (err) {
     console.error(`consolidate-strays: ${err.message}`);
     process.exitCode = 1;

@@ -53,7 +53,11 @@ node "$REPO/scripts/consolidate-strays.mjs"
 ```
 
 Read the whole report (default is a read-only dry-run): every store skill
-classifies as **current**, **new stray**, or **modified stray**.
+classifies as **current**, **new stray**, **modified stray**, or
+**externally managed**. The last class is a store skill another application
+writes and rewrites (its `SKILL.md` carries a `<tool>-managed-skill` marker) —
+never a stray, never adopted, never overwritten, reported so the count stays
+honest.
 
 - Any stray → load `references/stray-recovery.md` and settle it (adopt, recover,
   or explicitly decline) before doing anything else — nothing proceeds past a

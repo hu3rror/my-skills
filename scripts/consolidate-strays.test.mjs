@@ -132,6 +132,29 @@ test("a store skill absent from the lock file and the repo is a new stray with i
   }
 });
 
+test("a store skill carrying a managed-skill marker is externally managed, not a stray", () => {
+  const d = fixture();
+  try {
+    makeTree(d.store, {
+      "herdr-gpui-browser/SKILL.md":
+        '---\nname: herdr-gpui-browser\ndescription: x\n---\n<!-- herdr-gpui-managed-skill v1: Sheprd keeps this file up to date. -->\n\n# Body\n',
+    });
+    writeLock(d.lock, {});
+
+    const { classified, report } = consolidate({
+      store: d.store,
+      lock: d.lock,
+      repo: d.repo,
+    });
+    assert.equal(classified[0].kind, "externally-managed");
+    assert.match(report, /externally managed \(1\)/);
+    assert.doesNotMatch(report, /new-stray \(/);
+    assert.match(report, /Totals: 0 current, 0 new stray, 0 modified stray, 1 externally managed\./);
+  } finally {
+    rmSync(d.root, { recursive: true, force: true });
+  }
+});
+
 test("a tracked skill whose content differs from its consolidated copy is a modified stray", () => {
   const d = fixture();
   try {
@@ -168,7 +191,7 @@ test("a tracked skill whose content matches its consolidated copy is current, ne
       classified.map((c) => [c.name, c.kind]),
       [["tracked", "current"]]
     );
-    assert.match(report, /Totals: 1 current, 0 new stray, 0 modified stray\./);
+    assert.match(report, /Totals: 1 current, 0 new stray, 0 modified stray, 0 externally managed\./);
   } finally {
     rmSync(d.root, { recursive: true, force: true });
   }
@@ -295,8 +318,18 @@ test("CLI exits 0 with no strays and 2 when strays exist", () => {
     const args = [SCRIPT, "--store", d.store, "--lock", d.lock, "--repo", d.repo];
     const clean = spawnSync(process.execPath, args, { encoding: "utf8" });
     assert.equal(clean.status, 0);
-    assert.match(clean.stdout, /Totals: 1 current, 0 new stray, 0 modified stray\./);
+    assert.match(
+      clean.stdout,
+      /Totals: 1 current, 0 new stray, 0 modified stray, 0 externally managed\./
+    );
 
+    makeTree(d.store, {
+      "sheprd-managed/SKILL.md":
+        "<!-- sheprd-managed-skill v1: the tool keeps this file up to date. -->",
+    });
+    const managed = spawnSync(process.execPath, args, { encoding: "utf8" });
+    assert.equal(managed.status, 0);
+    assert.match(managed.stdout, /externally managed \(1\)/);
     makeTree(d.store, { "brand-new/SKILL.md": "stray" });
     const dirty = spawnSync(process.execPath, args, { encoding: "utf8" });
     assert.equal(dirty.status, 2);
