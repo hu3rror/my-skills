@@ -1,7 +1,6 @@
 ---
 name: reconcile
 description: "Verify a finished artifact against its source — is it faithful to what was asked, and is every factual claim backed by evidence — returning one table of replaceable fragments."
-disable-model-invocation: true
 ---
 
 # 核验产物
