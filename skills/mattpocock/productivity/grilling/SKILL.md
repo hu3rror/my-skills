@@ -10,18 +10,22 @@ Work the tree in **rounds**. The **frontier** is every decision whose prerequisi
 Format a round like so:
 
 ```
-❓ **Q1** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
+❓ **Q1** - **<question title>**: <the question and the context it needs, one or two sentences>
+
+<alternatives, one per line — **<label>** <alternative>; <what it costs or enables>; omit when one answer settles them all>
 
 ➡️ <your recommended answer>
 
 ---
 
-❓ **Q2** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
+❓ **Q2** - **<question title>**: <the question and the context it needs, one or two sentences>
 
 ➡️ <your recommended answer>
 ```
 
-Word each question so "yes" accepts your recommended answer.
+Word each question so "yes" accepts your recommended answer; on a choice question, the recommended label is that "yes"; a bare "yes" takes every recommendation of the round.
+
+One tier per line: ❓ carries the items one answer settles together (a security model, a storage layer); an item the user could answer apart from its neighbours gets its own question.
 
 Each round the user answers reshapes the tree: settled decisions push the frontier outward and unblock questions that depended on them. Recompute the frontier and ask the next round. A question whose answer depends on another question still open in this round belongs to a _later_ round, not this one.
 
