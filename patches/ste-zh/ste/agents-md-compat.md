@@ -7,18 +7,20 @@ upstream:
 verification: diff
 summary: >-
   New "与本仓库 AGENTS.md 的关系" section carrying the adoption's conflict
-  rulings in-skill: AGENTS.md already holds the core report rules (this skill
-  supplements templates/glossary/self-check), the [NEED-VERIFY] and
-  [NEEDS MANUAL VERIFICATION] markers count as 未验证 (no rewrite of existing
+  rulings in-skill: an AGENTS.md rule that loads this skill for report replies
+  counts as explicit activation (the skill then takes precedence), the
+  [NEED-VERIFY] and [NEEDS MANUAL VERIFICATION] markers count as 未验证 (no
+  rewrite of existing
   skills), and PR bodies / GitHub Release notes are file artifacts outside the
   skill's scope (decisions Q4/Q5 of the adoption).
 ---
 
 ## Why
 
-The adoption blend (AGENTS.md core rules permanent + full skill on explicit
-request) needs a place that states the precedence and the two compatibility
-mappings, scoped inside the skill so a future session seeing this file knows
+The adoption needs one place stating precedence and the two compatibility
+mappings. An AGENTS.md rule that loads this skill for report replies is the
+activation mechanism; once active the skill body overrides project summaries,
+so the core report rules live only here and need no mirror in AGENTS.md.
 the rulings without re-deriving them.
 
 ## Diff
@@ -32,7 +34,7 @@ the rulings without re-deriving them.
  
 +## 与本仓库 AGENTS.md 的关系
 +
-+- 本仓库 AGENTS.md 已含本 skill 的核心汇报规则（状态词表、未验证/未确认区分、按回复类型定首句、证据定位、选项化决策）。未激活本 skill 时，按 AGENTS.md 的规则写；激活后，本文件为准。
++- 项目 AGENTS.md 里的「任务类回复先加载本 skill」规则即显式激活；激活后以本文件为准，未激活时按 AGENTS.md 的规则写。
 +- 兼容标记：`[NEED-VERIFY]` 与 `[NEEDS MANUAL VERIFICATION]` 视为「未验证」，不另作标记。
 +- PR body 与 GitHub Release 正文属于写入项目的文件产物，不受本 skill 约束。
 +

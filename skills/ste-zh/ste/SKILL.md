@@ -28,7 +28,7 @@ description: >-
 
 ## 与本仓库 AGENTS.md 的关系
 
-- 本仓库 AGENTS.md 已含本 skill 的核心汇报规则（状态词表、未验证/未确认区分、按回复类型定首句、证据定位、选项化决策）。未激活本 skill 时，按 AGENTS.md 的规则写；激活后，本文件为准。
+- 项目 AGENTS.md 里的「任务类回复先加载本 skill」规则即显式激活；激活后以本文件为准，未激活时按 AGENTS.md 的规则写。
 - 兼容标记：`[NEED-VERIFY]` 与 `[NEEDS MANUAL VERIFICATION]` 视为「未验证」，不另作标记。
 - PR body 与 GitHub Release 正文属于写入项目的文件产物，不受本 skill 约束。
 
