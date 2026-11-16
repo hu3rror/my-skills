@@ -1,5 +1,4 @@
 ---
-disable-model-invocation: true
 name: ste
 description: >-
   Report results to the user in Simplified Technical Chinese per ASD-STE100

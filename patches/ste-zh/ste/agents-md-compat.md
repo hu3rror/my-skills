@@ -5,7 +5,6 @@ upstream:
   source: dualface/ste-zh
   path: SKILL.md
 verification: diff
-after: ste-zh.disable-model-invocation
 summary: >-
   New "与本仓库 AGENTS.md 的关系" section carrying the adoption's conflict
   rulings in-skill: AGENTS.md already holds the core report rules (this skill

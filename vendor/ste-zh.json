@@ -3,5 +3,5 @@
   "repo": "dualface/ste-zh",
   "url": "https://github.com/dualface/ste-zh.git",
   "pin": "f7c104315045849e7bce357664273b4e99bc5119",
-  "note": "Onboarded 2026-10-29: ASD-STE100-based Simplified Technical Chinese report-standard skill (upstream root = skill root). Pin = 2026-11-12 HEAD (f7c1043: PR #3, README 补 WorkBuddy 安装路径与全局常驻配置). Three patches recorded: disable-model-invocation, AGENTS.md compat note, description rewrite (459->267; reshaped 2026-11-01, keeps compressed English description, upstream's explicit-activation wording absorbed via merged 生效与持续 section instead)."
+  "note": "Onboarded 2026-10-29: ASD-STE100-based Simplified Technical Chinese report-standard skill (upstream root = skill root). Pin = 2026-11-12 HEAD (f7c1043: PR #3, README 补 WorkBuddy 安装路径与全局常驻配置). Two patches recorded: AGENTS.md compat note, description rewrite (623->267, keeps compressed English description; upstream's explicit-activation wording absorbed via merged 生效与持续 section). disable-model-invocation patch dropped 2026-11-16 per user request (flag removed, ste no longer loader-gated; explicit-activation rule stays in the body's 生效与持续 section)."
 }
